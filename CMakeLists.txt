@@ -29,6 +29,7 @@ set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
 	$<$<CONFIG:Release>:NDEBUG=1>
 	)
 
+set(CMAKE_CXX_STANDARD 17)
 
 set(SOURCE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Source)
 file(GLOB_RECURSE SRC_FILES LIST_DIRECTORIES false "${SOURCE_PATH}/*.cpp" "${SOURCE_PATH}/*.h")
@@ -52,15 +53,17 @@ set(GUI_BIN_DIR ${GUI_BASE_DIR}/Build/${CONFIGURATION_FOLDER})
 if (NOT CMAKE_LIBRARY_ARCHITECTURE)
 	if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 		set(CMAKE_LIBRARY_ARCHITECTURE "x64")
+		set(NIDAQMX_LINK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Source/nidaq-api/lib64/msvc/NIDAQmx.lib)
 	else()
 		set(CMAKE_LIBRARY_ARCHITECTURE "x86")
+		set(NIDAQMX_LINK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Source/nidaq-api/lib32/msvc/NIDAQmx.lib)
 	endif()
 endif()
 
 #Libraries and compiler options
 if(MSVC)
 	target_link_libraries(${PLUGIN_NAME} ${GUI_BIN_DIR}/open-ephys.lib)
-	target_compile_options(${PLUGIN_NAME} PRIVATE /sdl-)
+	target_compile_options(${PLUGIN_NAME} PRIVATE /sdl- /W0)
 	
 	install(TARGETS ${PLUGIN_NAME} RUNTIME DESTINATION ${GUI_BIN_DIR}/plugins  CONFIGURATIONS ${CMAKE_CONFIGURATION_TYPES})
 
@@ -71,8 +74,7 @@ elseif(LINUX)
 		"-fvisibility=hidden -fPIC -rdynamic -Wl,-rpath,'$$ORIGIN/../shared'")
 	target_compile_options(${PLUGIN_NAME} PRIVATE -fPIC -rdynamic)
 	target_compile_options(${PLUGIN_NAME} PRIVATE -O3) #enable optimization for linux debug
-  target_compile_options(${PLUGIN_NAME} PRIVATE -Wall) #enable warnings
-
+	
 	install(TARGETS ${PLUGIN_NAME} LIBRARY DESTINATION ${GUI_BIN_DIR}/plugins)
 elseif(APPLE)
 	set_target_properties(${PLUGIN_NAME} PROPERTIES BUNDLE TRUE)
@@ -82,25 +84,3 @@ elseif(APPLE)
 	install(TARGETS ${PLUGIN_NAME} DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/PlugIns)
 	set(CMAKE_PREFIX_PATH /opt/local)
 endif()
-
-#create filters for vs and xcode
-
-foreach( src_file IN ITEMS ${SRC_FILES})
-	get_filename_component(src_path "${src_file}" PATH)
-	file(RELATIVE_PATH src_path_rel "${SOURCE_PATH}" "${src_path}")
-	string(REPLACE "/" "\\" group_name "${src_path_rel}")
-	source_group("${group_name}" FILES "${src_file}")
-endforeach()
-
-#additional libraries, if needed
-#find_package(LIBNAME)
-find_package(PkgConfig REQUIRED)
-pkg_search_module(PKG_OPENCV REQUIRED opencv)  # this looks for opencv.pc file
-include_directories(${PKG_OPENCV_INCLUDE_DIRS})
-target_link_libraries (${PLUGIN_NAME} ${PKG_OPENCV_LDFLAGS})
-#or
-#find_library(LIBNAME_LIBRARIES NAMES libname)
-#find_path(LIBNAME_INCLUDE_DIRS includefile.h)
-#
-#target_link_libraries(${PLUGIN_NAME} ${LIBNAME_LIBRARIES})
-#target_include_directories(${PLUGIN_NAME} PRIVATE ${LIBNAME_INCLUDE_DIRS})

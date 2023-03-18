@@ -25,8 +25,8 @@
 #include <stdio.h>
 
 
-FrameGrabberEditor::FrameGrabberEditor(GenericProcessor* parentNode, bool useDefaultParameterEditors=true)
-    : GenericEditor(parentNode, useDefaultParameterEditors), lastFrameCount(0)
+FrameGrabberEditor::FrameGrabberEditor(GenericProcessor* parentNode)
+    : GenericEditor(parentNode), lastFrameCount(0)
 
 {
     desiredWidth = 350;
@@ -125,7 +125,7 @@ FrameGrabberEditor::FrameGrabberEditor(GenericProcessor* parentNode, bool useDef
 	dirNameEdit->setTooltip("Frame directory name");
 	addAndMakeVisible(dirNameEdit);
 
-	startTimer(1000);  // update FPS label once per second
+	//startTimer(1000);  // TODO: update FPS label once per second
 }
 
 
@@ -182,7 +182,7 @@ void FrameGrabberEditor::comboBoxChanged(ComboBox* cb)
 }
 
 
-void FrameGrabberEditor::buttonEvent(Button* button)
+void FrameGrabberEditor::buttonClicked(Button* button)
 {
 	if (button == refreshButton)
 	{

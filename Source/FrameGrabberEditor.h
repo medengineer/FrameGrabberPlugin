@@ -36,19 +36,22 @@
 
 */
 
-class FrameGrabberEditor : public GenericEditor, public ComboBox::Listener,
-public Label::Listener
+class FrameGrabberEditor : 
+    public GenericEditor, 
+    public ComboBox::Listener,
+    public Label::Listener,
+    public Button::Listener
 
 {
 public:
-    FrameGrabberEditor(GenericProcessor* parentNode, bool useDefaultParameterEditors);
+    FrameGrabberEditor(GenericProcessor* parentNode);
     virtual ~FrameGrabberEditor();
 
-	void updateSettings();
+    void updateSettings();
 	void updateDevices();
 
     void comboBoxChanged(ComboBox* comboBoxThatHasChanged);
-	void buttonEvent(Button* button);
+	void buttonClicked(Button* button);
 	void labelTextChanged(juce::Label *);
 	void timerCallback();
 

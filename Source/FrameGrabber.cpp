@@ -21,12 +21,8 @@
 
 */
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/opencv.hpp>
-#include <opencv2/highgui/highgui.hpp>
 
 #include <stdio.h>
-#include "v4l2framegrabber.h"
 #include "FrameGrabber.h"
 
 class FrameGrabberEditor;
@@ -36,53 +32,6 @@ We have to put some class definitions that are using opencv here because
 there will be a data type conflict (int64) between opencv and JUCE if these
 classes are declared in the header file.
 */
-
-class FrameWithTS
-{
-public:
-	FrameWithTS(cv::Mat *f, juce::int64 src_ts, juce::int64 sw_ts, int imgQuality = 75)
-	{
-		frame = f;
-		sourceTimestamp = src_ts;
-		softwareTimestamp = sw_ts;
-		imageQuality = imgQuality;
-	}
-
-	~FrameWithTS()
-	{
-		if (frame != NULL)
-		{
-			delete frame;
-		}
-	}
-
-	cv::Mat* getFrame()
-	{
-		return frame;
-	}
-
-	juce::int64 getSourceTimestamp()
-	{
-		return sourceTimestamp;
-	}
-
-	juce::int64 getSoftwareTimestamp()
-	{
-		return softwareTimestamp;
-	}
-
-	int getImageQuality()
-	{
-		return imageQuality;
-	}
-
-private:
-	cv::Mat* frame;
-	juce::int64 sourceTimestamp;
-	juce::int64 softwareTimestamp;
-	int imageQuality;
-};
-
 
 class WriteThread : public Thread
 {
@@ -116,7 +65,10 @@ public:
 			 framePath.createDirectory();
 		}
 
-	    String filePath(framePath.getFullPathName() + framePath.separatorString + name + ".csv");
+		String filePath = framePath.getFullPathName()
+			   + File::getSeparatorString()
+			   + name
+			   + ".csv";
 
 		timestampFile = File(filePath);
 		if (!timestampFile.exists())
@@ -157,7 +109,7 @@ public:
 		lock.exit();
 	}
 
-	bool addFrame(cv::Mat *frame, juce::int64 srcTs, juce::int64 swTs, int quality = 95)
+	bool addFrame(juce::Image &frame, juce::int64 srcTs, juce::int64 swTs, int quality = 95)
 	{
 		bool status;
 
@@ -234,17 +186,19 @@ public:
 					++frameCounter;
 
 					fileName = String::formatted("frame_%.10lld_%d_%d.jpg", frameCounter, experimentNumber, recordingNumber);
-		            filePath = String(framePath.getFullPathName() + framePath.separatorString + fileName);
+		            filePath = String(framePath.getFullPathName() + File::getSeparatorString() + fileName);
 
 					lock.exit();
 
+					/* TODO: Write to disk
 					std::vector<int> compression_params;
 					compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
 					compression_params.push_back(frame_ts->getImageQuality());
 					cv::imwrite(filePath.toRawUTF8(), (*frame_ts->getFrame()), compression_params);
+					*/
 
 					lock.enter();
-					line = String::formatted("%lld,%d,%d,%lld,%lld\n", frameCounter, experimentNumber, recordingNumber, frame_ts->getSourceTimestamp(), frame_ts->getSoftwareTimestamp());
+					line = String::formatted("%lld,%d,%d,%lld,%lld\n", frameCounter, experimentNumber, recordingNumber, frame_ts->getTS(), frame_ts->getSWTS());
 					lock.exit();
 					timestampFile.appendText(line);
 
@@ -271,49 +225,97 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WriteThread)
 };
 
-
 FrameGrabber::FrameGrabber()
-    : GenericProcessor("Frame Grabber"), camera(NULL), currentFormatIndex(-1),
+    : GenericProcessor("Frame Grabber"), currentFormatIndex(-1),
 	  frameCounter(0), Thread("FrameGrabberThread"), isRecording(false), framePath(""),
 	  imageQuality(25), colorMode(ColorMode::GRAY), writeMode(ImageWriteMode::RECORDING),
 	  resetFrameCounter(false), dirName("frames")
 
 {
-    setProcessorType(PROCESSOR_TYPE_SOURCE);
 
-	File recPath = CoreServices::RecordNode::getRecordingPath();
-	framePath = File(recPath.getFullPathName() + recPath.separatorString + dirName);
+	File recPath = CoreServices::getRecordingParentDirectory();
+	framePath = File(recPath.getFullPathName() + File::getSeparatorString() + dirName);
+
+	    /* Create a File Reader device */
+    DeviceInfo::Settings settings {
+        "Frame Grabber",
+        "description",
+        "identifier",
+        "00000x003",
+        "Open Ephys"
+    };
+    devices.add(new DeviceInfo(settings));
+
+    isEnabled = false;
 
 	writeThread = new WriteThread();
 }
 
-
 FrameGrabber::~FrameGrabber()
 {
-	stopCamera();
-	delete writeThread;
+    signalThreadShouldExit();
+    notify();
 }
-
 
 AudioProcessorEditor* FrameGrabber::createEditor()
 {
-    editor = new FrameGrabberEditor(this, true);
+    editor = std::make_unique<FrameGrabberEditor>(this);
 
-    return editor;
+    return editor.get();
 }
-
 
 void FrameGrabber::updateSettings()
 {
-	if (editor != NULL)
-	{
-		editor->update();
-	}
-}
+ 	LOGD("FrameGrabber updating  settings.");
 
+	DataStream::Settings streamSettings{
+
+		"FrameGrabber",
+		"description",
+		"identifier",
+		getDefaultSampleRate()
+
+	};
+
+	LOGD("File Reader adding data stream.");
+
+	dataStreams.add(new DataStream(streamSettings));
+	dataStreams.getLast()->addProcessor(processorInfo.get());
+
+	ContinuousChannel::Settings channelSettings
+	{
+		ContinuousChannel::Type::ELECTRODE,
+		"DUMMY_CHANNEL",
+		"description",
+		"filereader.stream",
+		0.195,
+		dataStreams.getLast()
+	};
+
+	continuousChannels.add(new ContinuousChannel(channelSettings));
+	continuousChannels.getLast()->addProcessor(processorInfo.get());
+
+	EventChannel* events;
+
+	EventChannel::Settings eventSettings{
+		EventChannel::Type::TTL,
+		"All TTL events",
+		"All TTL events loaded for the current input data source",
+		"filereader.events",
+		dataStreams.getLast()
+	};
+
+	events = new EventChannel(eventSettings);
+	String id = "sourceevent";
+	events->setIdentifier(id);
+	events->addProcessor(processorInfo.get());
+	eventChannels.add(events);
+
+}
 
 void FrameGrabber::startRecording()
 {
+	/*
 	if (writeMode == RECORDING)
 	{
 		File recPath = CoreServices::RecordNode::getRecordingPath();
@@ -348,11 +350,12 @@ void FrameGrabber::startRecording()
 	}
 
 	isRecording = true;
+	*/
 }
-
 
 void FrameGrabber::stopRecording()
 {
+	/*
 	isRecording = false;
 	if (writeMode == RECORDING)
 	{
@@ -360,16 +363,16 @@ void FrameGrabber::stopRecording()
 		FrameGrabberEditor* e = (FrameGrabberEditor*) editor.get();
 		e->enableControls();
 	}
+	*/
 }
-
 
 void FrameGrabber::process(AudioSampleBuffer& buffer)
 {
 }
 
-
 void FrameGrabber::run()
 {
+	/*
 	juce::int64 srcTS;
 	juce::int64 swTS;
 	bool recStatus;
@@ -411,88 +414,8 @@ void FrameGrabber::run()
 			}
 		}
     }
+	*/
 
-}
-
-int FrameGrabber::startCamera(int fmt_index)
-{
-	if (isCameraRunning())
-	{
-		if (stopCamera())
-		{
-			return 1;
-		}
-	}
-
-	camera = new Camera(fmt_index);
-
-	if (camera->init())
-	{
-		std::cout <<  "FrameGrabber: could not open camera\n";
-		return 1;
-	}
-
-	if (camera->start())
-	{
-		std::cout <<  "FrameGrabber: could not open camera\n";
-		return 1;
-	}
-
-	if (camera->is_running())
-	{
-		std::cout << "FrameGrabber: opened camera " << camera->get_format()->to_string() << "\n";
-		currentFormatIndex = fmt_index;
-
-		try
-		{
-			cv::namedWindow("FrameGrabber", cv::WINDOW_OPENGL & cv::WND_PROP_ASPECT_RATIO);
-			std::cout << "FrameGrabber using opengl window\n";
-		}
-		catch (cv::Exception& ex)
-		{
-			cv::namedWindow("FrameGrabber", cv::WINDOW_NORMAL & cv::WND_PROP_ASPECT_RATIO);
-			std::cout << "FrameGrabber using normal window (opencv not compiled with opengl support)\n";
-		}
-
-		startThread();
-	}
-
-	return 0;
-}
-
-int FrameGrabber::stopCamera()
-{
-	if (isThreadRunning())
-		stopThread(1000);
-
-  if (isRecording)
-    stopRecording();
-
-	currentFormatIndex = -1;
-
-	if (camera != NULL)
-	{
-		delete camera;
-		camera = NULL;
-	}
-  return 0;
-}
-
-bool FrameGrabber::isCameraRunning()
-{
-	return (camera != NULL && camera->is_running());
-}
-
-
-std::vector<std::string> FrameGrabber::getFormats()
-{
-	std::vector<std::string> formats = Camera::list_formats_as_string();
-	return formats;
-}
-
-int FrameGrabber::getCurrentFormatIndex()
-{
-	return currentFormatIndex;
 }
 
 void FrameGrabber::setImageQuality(int q)
@@ -509,7 +432,6 @@ void FrameGrabber::setImageQuality(int q)
 	}
 	lock.exit();
 }
-
 
 int FrameGrabber::getImageQuality()
 {
@@ -608,14 +530,14 @@ void FrameGrabber::saveCustomParametersToXml(XmlElement* xml)
 	deviceXml->setAttribute("API", "V4L2");
 	if (currentFormatIndex >= 0)
 	{
-		deviceXml->setAttribute("Format", Camera::get_format_string(currentFormatIndex));
+		//TODO: Actually get and save format
+		deviceXml->setAttribute("Format", "TODO");
 	}
 	else
 	{
 		deviceXml->setAttribute("Format", "");
 	}
 }
-
 
 void FrameGrabber::loadCustomParametersFromXml()
 {
@@ -643,7 +565,7 @@ void FrameGrabber::loadCustomParametersFromXml()
 		if (api.compareIgnoreCase("V4L2") == 0)
 		{
 			String format = deviceXml->getStringAttribute("Format");
-			int index = Camera::get_format_index(format.toStdString());
+			int index = 0; //Camera::get_format_index(format.toStdString());
 			if (index >= 0)
 			{
 				if (isCameraRunning())
@@ -661,4 +583,3 @@ void FrameGrabber::loadCustomParametersFromXml()
 
 	updateSettings();
 }
-

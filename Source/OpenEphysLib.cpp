@@ -2,7 +2,7 @@
 ------------------------------------------------------------------
 
 This file is part of the Open Ephys GUI
-Copyright (C) 2016 Open Ephys
+Copyright (C) 2023 Open Ephys
 
 ------------------------------------------------------------------
 
@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <PluginInfo.h>
-#include "FrameGrabber.h"
 #include <string>
+#include "FrameGrabber.h"
 
 #ifdef WIN32
 #include <Windows.h>
@@ -32,21 +32,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 using namespace Plugin;
-//Number of plugins defined on the library. Can be of different types (Processors, RecordEngines, etc...)
 #define NUM_PLUGINS 1
 
 extern "C" EXPORT void getLibInfo(Plugin::LibraryInfo* info)
 {
-	/* API version, defined by the GUI source.
-	Should not be changed to ensure it is always equal to the one used in the latest codebase.
-	The GUI refueses to load plugins with mismatched API versions */
 	info->apiVersion = PLUGIN_API_VER;
-
-	//Name of the Library, used only for information
-	info->name = "Frame Grabber";
-
-	//Version of the library, used only for information
-	info->libVersion = 1;
+	info->name = "FrameGrabber";
+	info->libVersion = "0.1.0";
 	info->numPlugins = NUM_PLUGINS;
 }
 
@@ -54,18 +46,10 @@ extern "C" EXPORT int getPluginInfo(int index, Plugin::PluginInfo* info)
 {
 	switch (index)
 	{
-		//one case per plugin. This example is for a processor which connects directly to the signal chain
 	case 0:
-		//Type of plugin. See "Source/Processors/PluginManager/OpenEphysPlugin.h" for complete info about the different type structures
-		info->type = PluginType::PLUGIN_TYPE_PROCESSOR;
-
-		//Processor name
-		info->processor.name = "Frame Grabber"; //Processor name shown in the GUI
-
-		//Type of processor. Can be FilterProcessor, SourceProcessor, SinkProcessor or UtilityProcessor. Specifies where on the processor list will appear
-		info->processor.type = ProcessorType::SourceProcessor;
-
-		//Class factory pointer. Replace "ProcessorPluginSpace::ProcessorPlugin" with the namespace and class name.
+		info->type = Plugin::PROCESSOR;
+		info->processor.name = "FrameGrabber";
+		info->processor.type = Plugin::Processor::SOURCE;
 		info->processor.creator = &(Plugin::createProcessor<FrameGrabber>);
 		break;
 	default:
