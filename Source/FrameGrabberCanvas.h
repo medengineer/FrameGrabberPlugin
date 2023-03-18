@@ -54,7 +54,7 @@ class FrameGrabberCanvas : public Visualizer
 public:
 
 	/** Constructor */
-	FrameGrabberCanvas(GenericProcessor*, FrameGrabberEditor*, FrameGrabber*);
+	FrameGrabberCanvas(FrameGrabber*, FrameGrabberEditor*);
 
 	/** Destructor */
 	~FrameGrabberCanvas();

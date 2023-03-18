@@ -25,8 +25,10 @@
 #define __FRAMEGRABBEREDITOR_H__
 
 
-#include <EditorHeaders.h>
+#include <VisualizerEditorHeaders.h>
 #include "FrameGrabber.h"
+
+class FrameGrabberCanvas;
 
 /**
 
@@ -37,7 +39,7 @@
 */
 
 class FrameGrabberEditor : 
-    public GenericEditor, 
+    public VisualizerEditor, 
     public ComboBox::Listener,
     public Label::Listener,
     public Button::Listener
@@ -47,11 +49,39 @@ public:
     FrameGrabberEditor(GenericProcessor* parentNode);
     virtual ~FrameGrabberEditor();
 
+    /** Called when editor is collapsed */
+	void collapsedStateChanged() override { /*TODO*/ };
+
+	/** Respond to combo box changes*/
+	void comboBoxChanged(ComboBox*);
+
+	/** Respond to button presses */
+	void buttonClicked(Button* button) override;
+
+	/** Save editor parameters (e.g. sync settings)*/
+	void saveVisualizerEditorParameters(XmlElement*) override { /*TODO*/ };
+
+	/** Load editor parameters (e.g. sync settings)*/
+	void loadVisualizerEditorParameters(XmlElement*) override { /*TODO*/ };
+
+	/** Called just prior to the start of acquisition, to allow custom commands. */
+	void startAcquisition() override { /*TODO*/ };
+
+	/** Called after the end of acquisition, to allow custom commands .*/
+	void stopAcquisition() override { /*TODO*/ };
+
+	/** Creates the Neuropixels settings interface*/
+	Visualizer* createNewCanvas(void);
+
+	/** Initializes the probes in a background thread */
+	void initialize(bool signalChainIsLoading);
+
+	/** Update settings */
+	void update();
+
     void updateSettings();
 	void updateDevices();
 
-    void comboBoxChanged(ComboBox* comboBoxThatHasChanged);
-	void buttonClicked(Button* button);
 	void labelTextChanged(juce::Label *);
 	void timerCallback();
 
@@ -59,6 +89,8 @@ public:
 	void enableControls();
 
 private:
+
+    FrameGrabberCanvas* canvas;
 
 	ScopedPointer<ComboBox> sourceCombo;
 	ScopedPointer<Label> sourceLabel;

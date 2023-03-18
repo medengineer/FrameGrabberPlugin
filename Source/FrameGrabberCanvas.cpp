@@ -75,11 +75,9 @@ void WebcamComponent::imageReceived(const juce::Image& image)
 }
 
 
-FrameGrabberCanvas::FrameGrabberCanvas(GenericProcessor* processor_, FrameGrabberEditor* editor_, FrameGrabber* thread_) : 
-    processor(processor_),
-    editor(editor_),
-    thread(thread_)
-
+FrameGrabberCanvas::FrameGrabberCanvas(FrameGrabber* thread_, FrameGrabberEditor* editor_) : 
+    thread(thread_),
+    editor(editor_)
 {
     cameraViewport = new Viewport();
 
