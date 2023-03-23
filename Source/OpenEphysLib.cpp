@@ -37,7 +37,7 @@ using namespace Plugin;
 extern "C" EXPORT void getLibInfo(Plugin::LibraryInfo* info)
 {
 	info->apiVersion = PLUGIN_API_VER;
-	info->name = "FrameGrabber";
+	info->name = "Frame Grabber";
 	info->libVersion = "0.1.0";
 	info->numPlugins = NUM_PLUGINS;
 }
@@ -48,7 +48,7 @@ extern "C" EXPORT int getPluginInfo(int index, Plugin::PluginInfo* info)
 	{
 	case 0:
 		info->type = Plugin::PROCESSOR;
-		info->processor.name = "FrameGrabber";
+		info->processor.name = "Frame Grabber";
 		info->processor.type = Plugin::Processor::SOURCE;
 		info->processor.creator = &(Plugin::createProcessor<FrameGrabber>);
 		break;
