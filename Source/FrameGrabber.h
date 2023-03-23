@@ -57,7 +57,6 @@ class FrameWithTS
         int imQ;
 };
 
-
 class WriteThread;
 
 enum ImageWriteMode {NEVER = 0, RECORDING = 1, ACQUISITION = 2};
@@ -118,6 +117,9 @@ public:
 
 	void saveCustomParametersToXml(XmlElement* parentElement);
 	void loadCustomParametersFromXml();
+
+	CameraDevice* cameraDevice;
+	bool hasCameraDevice { false };
 
 private:
 

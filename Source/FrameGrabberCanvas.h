@@ -26,22 +26,24 @@
 
 class FrameGrabberEditor;
 
-class WebcamComponent : public juce::Component, juce::CameraDevice::Listener
+class CameraView : public juce::Component, public juce::CameraDevice::Listener
 {
 public:
-    WebcamComponent();
-    ~WebcamComponent() override;
+    CameraView(FrameGrabber* thread_);
+    ~CameraView() override;
 
     void paint(juce::Graphics&) override;
     void resized() override;
 
 private:
+
+	FrameGrabber* thread;
+
     void imageReceived(const juce::Image& image) override;
 
-    std::unique_ptr<juce::CameraDevice> camera;
-    juce::Image webcamImage;
+    juce::Image cameraImage;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WebcamComponent)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CameraView)
 };
 
 /** 
@@ -89,7 +91,7 @@ public:
 
 	ScopedPointer<Viewport> cameraViewport;
 
-    std::unique_ptr<WebcamComponent> webcamComponent;
+    std::unique_ptr<CameraView> cameraView;
 
 	FrameGrabberEditor* editor;
     FrameGrabber* thread;

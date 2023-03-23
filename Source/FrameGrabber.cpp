@@ -40,7 +40,6 @@ public:
         : Thread ("WriteThread"), framePath(), timestampFile(), frameCounter(0), experimentNumber(1), recordingNumber(0), isRecording(false)
     {
 		frameBuffer.clear();
-
         startThread();
     }
 
@@ -232,6 +231,12 @@ FrameGrabber::FrameGrabber()
 	  resetFrameCounter(false), dirName("frames")
 
 {
+	// TODO: Populate a list of available devices
+	if (CameraDevice::getAvailableDevices().size())
+	{
+		cameraDevice = CameraDevice::openDevice(0);
+		hasCameraDevice = true;
+	}
 
 	File recPath = CoreServices::getRecordingParentDirectory();
 	framePath = File(recPath.getFullPathName() + File::getSeparatorString() + dirName);
@@ -246,7 +251,7 @@ FrameGrabber::FrameGrabber()
     };
     devices.add(new DeviceInfo(settings));
 
-    isEnabled = false;
+	isEnabled = hasCameraDevice;
 
 	writeThread = new WriteThread();
 }

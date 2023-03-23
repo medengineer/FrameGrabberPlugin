@@ -26,37 +26,25 @@ along with this program.If not, see < http://www.gnu.org/licenses/>.
 #include "FrameGrabberEditor.h"
 #include "FrameGrabber.h"
 
-WebcamComponent::WebcamComponent()
+CameraView::CameraView(FrameGrabber* thread_) : thread(thread_)
 {
-
-    //Create a webcam component
-	CameraDevice* cameraDevice;
-	std::unique_ptr<Component> cameraPreviewComp;
-
-    int numDevices = CameraDevice::getAvailableDevices().size();
-
-    if (numDevices > 0)
-    {
-        camera.reset(CameraDevice::openDevice(0));
-        if (camera)
-            camera->addListener(this);
-    }
+    if (thread->hasCameraDevice)
+        thread->cameraDevice->addListener(this);
 }
 
-WebcamComponent::~WebcamComponent()
+CameraView::~CameraView()
 {
-    if (camera)
-        camera->removeListener(this);
 }
 
-void WebcamComponent::paint(juce::Graphics& g)
+void CameraView::paint(juce::Graphics& g)
 {
+
     g.fillAll(juce::Colours::black);
 
     Rectangle<int> bounds = getLocalBounds();
 
     g.drawImageWithin(
-        webcamImage, 
+        cameraImage,
         bounds.getX(), 
         bounds.getY(),
         bounds.getWidth(),
@@ -64,13 +52,14 @@ void WebcamComponent::paint(juce::Graphics& g)
         juce::RectanglePlacement::stretchToFit, false);
 }
 
-void WebcamComponent::resized()
+void CameraView::resized()
 {
 }
 
-void WebcamComponent::imageReceived(const juce::Image& image)
+void CameraView::imageReceived(const juce::Image& image)
 {
-    webcamImage = image;
+    MessageManagerLock mml;
+    cameraImage = image;
     repaint();
 }
 
@@ -81,12 +70,12 @@ FrameGrabberCanvas::FrameGrabberCanvas(FrameGrabber* thread_, FrameGrabberEditor
 {
     cameraViewport = new Viewport();
 
-    webcamComponent = std::make_unique<WebcamComponent>();
+    cameraView = std::make_unique<CameraView>(thread);
 
-    webcamComponent->setBounds(100, 100, 640, 480);
-    webcamComponent->setVisible(true);
+    cameraView->setBounds(100, 100, 640, 480);
+    cameraView->setVisible(true);
 
-    cameraViewport->setViewedComponent(webcamComponent.get(), false);
+    cameraViewport->setViewedComponent(cameraView.get(), false);
     addAndMakeVisible(cameraViewport);
 
     resized();
