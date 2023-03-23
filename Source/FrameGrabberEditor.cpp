@@ -46,11 +46,10 @@ FrameGrabberEditor::FrameGrabberEditor(GenericProcessor* parentNode)
     sourceCombo->setBounds(110,25,220,20);
     sourceCombo->addListener(this);
 
+	// Populate devices and select the first available device
 	std::vector<std::string> formats = thread->getFormats();
     for (unsigned int i=0; i<formats.size(); i++)
-    {
-        sourceCombo->addItem(formats.at(i), i+1);
-    }
+        sourceCombo->addItem(formats[i], i+1);
 	addAndMakeVisible(sourceCombo);
 
 	qualityLabel = new Label("image quality label", "Image quality");

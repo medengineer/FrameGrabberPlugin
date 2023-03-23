@@ -231,11 +231,14 @@ FrameGrabber::FrameGrabber()
 	  resetFrameCounter(false), dirName("frames")
 
 {
-	// TODO: Populate a list of available devices
+
 	if (CameraDevice::getAvailableDevices().size())
 	{
-		cameraDevice = CameraDevice::openDevice(0);
 		hasCameraDevice = true;
+		currentFormatIndex = 0;
+		cameraDevice = CameraDevice::openDevice(currentFormatIndex);
+		for (auto& device : CameraDevice::getAvailableDevices())
+			formats.push_back(device.toStdString());
 	}
 
 	File recPath = CoreServices::getRecordingParentDirectory();
@@ -251,9 +254,9 @@ FrameGrabber::FrameGrabber()
     };
     devices.add(new DeviceInfo(settings));
 
-	isEnabled = hasCameraDevice;
-
 	writeThread = new WriteThread();
+
+	isEnabled = hasCameraDevice;
 }
 
 FrameGrabber::~FrameGrabber()
@@ -271,18 +274,18 @@ AudioProcessorEditor* FrameGrabber::createEditor()
 
 void FrameGrabber::updateSettings()
 {
- 	LOGD("FrameGrabber updating  settings.");
+ 	LOGD("Frame Grabber updating  settings.");
 
 	DataStream::Settings streamSettings{
 
-		"FrameGrabber",
+		"Frame Grabber",
 		"description",
 		"identifier",
 		getDefaultSampleRate()
 
 	};
 
-	LOGD("File Reader adding data stream.");
+	LOGD("Frame Grabber adding data stream.");
 
 	dataStreams.add(new DataStream(streamSettings));
 	dataStreams.getLast()->addProcessor(processorInfo.get());

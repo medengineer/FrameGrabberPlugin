@@ -94,7 +94,7 @@ public:
 	int stopCamera() { /* TODO */ return 0; }
 	bool isCameraRunning() { /* TODO */ return false; }
 
-	std::vector<std::string> getFormats() { /* TODO */ return std::vector<std::string>(); }
+	std::vector<std::string> getFormats() { return formats; }
 	int getCurrentFormatIndex() { return currentFormatIndex; }
 
 	void setImageQuality(int q);
@@ -124,6 +124,8 @@ public:
 private:
 
 	void run() override;
+
+	std::vector<std::string> formats;
 
 	juce::int64 frameCounter;
 	bool threadRunning;

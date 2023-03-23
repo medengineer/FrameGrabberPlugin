@@ -58,6 +58,8 @@ void CameraView::resized()
 
 void CameraView::imageReceived(const juce::Image& image)
 {
+    //TODO: This hits an assert in debug mode on GUI quit.
+    // Need to stop the camera device before the GUI quits.
     MessageManagerLock mml;
     cameraImage = image;
     repaint();
