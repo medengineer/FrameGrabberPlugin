@@ -232,11 +232,23 @@ FrameGrabber::FrameGrabber()
 
 {
 
+	int width = 960;
+	int height = 720;
+	int maxWidth = 960;
+	int maxHeight = 720;
+	bool highQuality = false;
+
 	if (CameraDevice::getAvailableDevices().size())
 	{
 		hasCameraDevice = true;
 		currentFormatIndex = 0;
-		cameraDevice = CameraDevice::openDevice(currentFormatIndex);
+		cameraDevice = CameraDevice::openDevice(
+			currentFormatIndex);
+			// width,
+			// height,
+			// maxWidth,
+			// maxHeight,
+			// highQuality);
 		for (auto& device : CameraDevice::getAvailableDevices())
 			formats.push_back(device.toStdString());
 	}
@@ -453,6 +465,7 @@ int FrameGrabber::getImageQuality()
 
 void FrameGrabber::setColorMode(int value)
 {
+	// 0 = grayscale, 1 = color
 	lock.enter();
 	colorMode = value;
 	lock.exit();
@@ -460,6 +473,7 @@ void FrameGrabber::setColorMode(int value)
 
 int FrameGrabber::getColorMode()
 {
+	// 0 = grayscale, 1 = color
 	int mode;
 	lock.enter();
 	mode = colorMode;

@@ -61,7 +61,26 @@ void CameraView::imageReceived(const juce::Image& image)
     //TODO: This hits an assert in debug mode on GUI quit.
     // Need to stop the camera device before the GUI quits.
     MessageManagerLock mml;
-    cameraImage = image;
+
+    if (thread->getColorMode() == 0)
+    {
+        // Generate a grayscale image
+        Image grayscaleImage = Image(Image::PixelFormat::RGB, image.getWidth(), image.getHeight(), true);
+        for (int w = 0; w < image.getWidth(); w++)
+        {
+            for (int h = 0; h < image.getHeight(); h++)
+            {
+                auto pixel = image.getPixelAt(w, h);
+                auto gray = (pixel.getRed() + pixel.getGreen() + pixel.getBlue()) / 3.0f;
+                grayscaleImage.setPixelAt(w, h, Colour(gray, gray, gray));
+            }
+        }
+        cameraImage = grayscaleImage;
+    }
+    else
+    {
+        cameraImage = image;
+    }
     repaint();
 }
 
