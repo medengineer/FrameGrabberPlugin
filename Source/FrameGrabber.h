@@ -40,7 +40,7 @@ class FrameWithTS
 {
     public:
 	    FrameWithTS(
-            const T &frame_,
+            const T frame_,
             int64 ts_,
             int64 swTs_,
 			int imQ_
@@ -52,7 +52,7 @@ class FrameWithTS
         int getImQ() const { return imQ; }
 
     private:
-        const T &frame;
+        const T frame;
         int64 ts, swTs;
         int imQ;
 };
@@ -63,7 +63,7 @@ enum ImageWriteMode {NEVER = 0, RECORDING = 1, ACQUISITION = 2};
 enum ColorMode {GRAY = 0, RGB = 1};
 
 
-class FrameGrabber : public GenericProcessor, private Thread
+class FrameGrabber : public GenericProcessor, private Thread, public juce::CameraDevice::Listener
 {
 public:
 
@@ -122,6 +122,8 @@ public:
 	bool hasCameraDevice { false };
 
 private:
+
+    void imageReceived(const juce::Image& image) override;
 
 	void run() override;
 

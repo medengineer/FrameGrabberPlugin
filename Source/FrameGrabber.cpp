@@ -108,14 +108,14 @@ public:
 		lock.exit();
 	}
 
-	bool addFrame(juce::Image &frame, juce::int64 srcTs, juce::int64 swTs, int quality = 95)
+	bool addFrame(const juce::Image &frame, juce::int64 srcTs, juce::int64 swTs, int quality = 95)
 	{
 		bool status;
 
 		if (isThreadRunning())
 		{
 			lock.enter();
-			frameBuffer.add(new FrameWithTS(frame, srcTs, swTs, quality));
+			frameBuffer.add(new FrameWithTS(frame.createCopy(), srcTs, swTs, quality));
 			lock.exit();
 			status = true;
 		}
@@ -167,7 +167,7 @@ public:
         while (!threadShouldExit())
         {
 
-			if (isRecording && hasValidPath())
+			if (isRecording && hasValidPath()) 
 			{
 				if (frameBuffer.size() > 0)
 				{
@@ -184,10 +184,9 @@ public:
 
 					++frameCounter;
 
-					fileName = String::formatted("frame_%.10lld_%d_%d.jpg", frameCounter, experimentNumber, recordingNumber);
+					//fileName = String::formatted("frame_%.10lld_%d_%d.jpg", frameCounter, experimentNumber, recordingNumber);
+					fileName = String::formatted("frame at %.10lld.jpg", frameCounter);
 		            filePath = String(framePath.getFullPathName() + File::getSeparatorString() + fileName);
-
-					lock.exit();
 
 					/* TODO: Write to disk
 					std::vector<int> compression_params;
@@ -196,10 +195,20 @@ public:
 					cv::imwrite(filePath.toRawUTF8(), (*frame_ts->getFrame()), compression_params);
 					*/
 
+					juce::File outputFile(filePath);
+				    juce::FileOutputStream stream (outputFile);
+					JPEGImageFormat jpegFormat;
+					jpegFormat.setQuality(frame_ts->getImQ());
+					jpegFormat.writeImageToStream(frame_ts->getFrame(), stream);
+
+					lock.exit();
+
+					/*
 					lock.enter();
 					line = String::formatted("%lld,%d,%d,%lld,%lld\n", frameCounter, experimentNumber, recordingNumber, frame_ts->getTS(), frame_ts->getSWTS());
 					lock.exit();
 					timestampFile.appendText(line);
+					*/
 
 				}
 
@@ -225,11 +234,11 @@ private:
 };
 
 FrameGrabber::FrameGrabber()
-    : GenericProcessor("Frame Grabber"), currentFormatIndex(-1),
+    : GenericProcessor("Frame Grabber"), 
+		currentFormatIndex(-1),
 	  frameCounter(0), Thread("FrameGrabberThread"), isRecording(false), framePath(""),
 	  imageQuality(25), colorMode(ColorMode::GRAY), writeMode(ImageWriteMode::RECORDING),
-	  resetFrameCounter(false), dirName("frames")
-
+	  resetFrameCounter(false)
 {
 
 	int width = 960;
@@ -251,10 +260,12 @@ FrameGrabber::FrameGrabber()
 			// highQuality);
 		for (auto& device : CameraDevice::getAvailableDevices())
 			formats.push_back(device.toStdString());
+
+		cameraDevice->addListener(this);
 	}
 
 	File recPath = CoreServices::getRecordingParentDirectory();
-	framePath = File(recPath.getFullPathName() + File::getSeparatorString() + dirName);
+	framePath = File(recPath.getFullPathName() + File::getSeparatorString() + CoreServices::getRecordingDirectoryBaseText() + File::getSeparatorString() + dirName);
 
 	    /* Create a File Reader device */
     DeviceInfo::Settings settings {
@@ -269,6 +280,7 @@ FrameGrabber::FrameGrabber()
 	writeThread = new WriteThread();
 
 	isEnabled = hasCameraDevice;
+
 }
 
 FrameGrabber::~FrameGrabber()
@@ -333,20 +345,38 @@ void FrameGrabber::updateSettings()
 
 }
 
+void FrameGrabber::imageReceived(const juce::Image& image)
+{
+	//Gets called ~15 fps w/ Logitech C920 @ 960x720
+
+	/* Whenever a frame is received, timestamp it and add it to a buffer */
+	juce::int64 srcTS = CoreServices::getGlobalTimestamp();
+	juce::int64 swTS = CoreServices::getSoftwareTimestamp();
+
+	//LOGD("Received image with timestamp: ", srcTS);
+
+	writeThread->addFrame(image, srcTS, swTS, getImageQuality());
+}
+
 void FrameGrabber::startRecording()
 {
-	/*
+
+	dirName = "Frame Grabber " + String(getNodeId());
+
 	if (writeMode == RECORDING)
 	{
-		File recPath = CoreServices::RecordNode::getRecordingPath();
-		framePath = File(recPath.getFullPathName() + recPath.separatorString + dirName);
+		File recPath = CoreServices::getRecordingParentDirectory();
+
+		framePath = File(recPath.getFullPathName() + File::getSeparatorString() + CoreServices::getRecordingDirectoryBaseText() + File::getSeparatorString() + dirName);
+
+		LOGC("Storing frames at: ", framePath.getFullPathName().toRawUTF8());
 
 		if (!framePath.exists() && !framePath.isDirectory())
 		{
 			Result result = framePath.createDirectory();
 			if (result.failed())
 			{
-				std::cout << "FrameGrabber: failed to create frame path " << framePath.getFullPathName().toRawUTF8() << "\n";
+				LOGC("FrameGrabber: failed to create frame path ", framePath.getFullPathName().toRawUTF8());
 				framePath = File();
 			}
 		}
@@ -355,8 +385,8 @@ void FrameGrabber::startRecording()
 		{
 			writeThread->setRecording(false);
 			writeThread->setFramePath(framePath);
-			writeThread->setExperimentNumber(CoreServices::RecordNode::getExperimentNumber());
-			writeThread->setRecordingNumber(CoreServices::RecordNode::getRecordingNumber());
+			//writeThread->setExperimentNumber(CoreServices::RecordNode::getExperimentNumber());
+			//writeThread->setRecordingNumber(CoreServices::RecordNode::getRecordingNumber());
 			writeThread->createTimestampFile();
 			if (resetFrameCounter)
 			{
@@ -370,12 +400,10 @@ void FrameGrabber::startRecording()
 	}
 
 	isRecording = true;
-	*/
 }
 
 void FrameGrabber::stopRecording()
 {
-	/*
 	isRecording = false;
 	if (writeMode == RECORDING)
 	{
@@ -383,11 +411,18 @@ void FrameGrabber::stopRecording()
 		FrameGrabberEditor* e = (FrameGrabberEditor*) editor.get();
 		e->enableControls();
 	}
-	*/
 }
 
 void FrameGrabber::process(AudioSampleBuffer& buffer)
 {
+	if (CoreServices::getRecordingStatus() && !isRecording)
+	{
+		startRecording();
+	}
+	else if (!CoreServices::getRecordingStatus() && isRecording)
+	{
+		stopRecording();
+	}
 }
 
 void FrameGrabber::run()
