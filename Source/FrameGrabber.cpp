@@ -369,7 +369,7 @@ void FrameGrabber::startRecording()
 
 		framePath = File(recPath.getFullPathName() + File::getSeparatorString() + CoreServices::getRecordingDirectoryBaseText() + File::getSeparatorString() + dirName);
 
-		LOGC("Storing frames at: ", framePath.getFullPathName().toRawUTF8());
+		LOGD("Writing frames to: ", framePath.getFullPathName().toRawUTF8());
 
 		if (!framePath.exists() && !framePath.isDirectory())
 		{

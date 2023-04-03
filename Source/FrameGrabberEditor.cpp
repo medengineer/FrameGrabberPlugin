@@ -62,11 +62,8 @@ FrameGrabberEditor::FrameGrabberEditor(GenericProcessor* parentNode)
     qualityCombo->setBounds(110,50-3,75,20);
     qualityCombo->addListener(this);
 
-    for (unsigned int i=0; i<100; i++)
-    {
-        qualityCombo->addItem(String(i+1), i+1);
-    }
-	qualityCombo->setSelectedItemIndex(thread->getImageQuality() - 1, dontSendNotification);
+    for (unsigned int i=0; i<=100; i+=5)
+		qualityCombo->addItem(String(i)+"%", i/5);
 	addAndMakeVisible(qualityCombo);
 
 	colorLabel = new Label("color mode label", "Color");
@@ -147,7 +144,7 @@ void FrameGrabberEditor::updateSettings()
 
 	FrameGrabber* thread = (FrameGrabber*) getProcessor();
 
-	qualityCombo->setSelectedItemIndex(thread->getImageQuality()-1, dontSendNotification);
+	qualityCombo->setSelectedItemIndex(thread->getImageQuality()/5-1, dontSendNotification);
 	colorCombo->setSelectedItemIndex(thread->getColorMode(), dontSendNotification);
 	writeModeCombo->setSelectedItemIndex(thread->getWriteMode(), dontSendNotification);
 
@@ -167,7 +164,7 @@ void FrameGrabberEditor::comboBoxChanged(ComboBox* cb)
     if (cb == qualityCombo)
     {
 		int index = cb->getSelectedItemIndex();
-		thread->setImageQuality(index + 1);
+		thread->setImageQuality(5*(index+1));
     }
     else if (cb == colorCombo)
     {
