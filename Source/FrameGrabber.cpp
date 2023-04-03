@@ -203,12 +203,10 @@ public:
 
 					lock.exit();
 
-					/*
 					lock.enter();
 					line = String::formatted("%lld,%d,%d,%lld,%lld\n", frameCounter, experimentNumber, recordingNumber, frame_ts->getTS(), frame_ts->getSWTS());
 					lock.exit();
 					timestampFile.appendText(line);
-					*/
 
 				}
 
