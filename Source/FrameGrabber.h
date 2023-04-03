@@ -109,11 +109,10 @@ public:
 	void setResetFrameCounter(bool enable);
 	bool getResetFrameCounter();
 
+	int64 getFrameCount();
+
 	void setDirectoryName(String name);
 	String getDirectoryName();
-
-	juce::int64 getFrameCount();
-	juce::int64 getWrittenFrameCount();
 
 	void saveCustomParametersToXml(XmlElement* parentElement);
 	void loadCustomParametersFromXml();
@@ -129,7 +128,8 @@ private:
 
 	std::vector<std::string> formats;
 
-	juce::int64 frameCounter;
+	int64 frameCount;
+
 	bool threadRunning;
 	bool isRecording;
 	File framePath;

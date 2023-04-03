@@ -42,7 +42,8 @@ class FrameGrabberEditor :
     public VisualizerEditor, 
     public ComboBox::Listener,
     public Label::Listener,
-    public Button::Listener
+    public Button::Listener,
+    public Timer
 
 {
 public:

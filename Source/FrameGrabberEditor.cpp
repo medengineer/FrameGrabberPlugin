@@ -124,7 +124,7 @@ FrameGrabberEditor::FrameGrabberEditor(GenericProcessor* parentNode)
 	dirNameEdit->setTooltip("Frame directory name");
 	addAndMakeVisible(dirNameEdit);
 
-	//startTimer(1000);  // TODO: update FPS label once per second
+	startTimer(1000);
 }
 
 
@@ -235,8 +235,8 @@ void FrameGrabberEditor::timerCallback()
 {
 	FrameGrabber* thread = (FrameGrabber*) getProcessor(); 
 
-	juce::int64 frameCount = thread->getFrameCount();
-	juce::int64 fps = frameCount - lastFrameCount;
+	int64 frameCount = thread->getFrameCount();
+	int64 fps = frameCount - lastFrameCount;
 	lastFrameCount = frameCount;
 
 	fpsLabel->setText(String("FPS: ") + String(fps), dontSendNotification);

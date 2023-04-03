@@ -35,9 +35,24 @@ classes are declared in the header file.
 
 class WriteThread : public Thread
 {
+	OwnedArray<FrameWithTS> frameBuffer;
+	juce::int64 frameCount;
+	int experimentNumber;
+	int recordingNumber;
+	File framePath;
+	File timestampFile;
+	bool isRecording;
+	CriticalSection lock;
+
 public:
     WriteThread()
-        : Thread ("WriteThread"), framePath(), timestampFile(), frameCounter(0), experimentNumber(1), recordingNumber(0), isRecording(false)
+        : Thread ("WriteThread"),
+		frameCount(0),
+		framePath(),
+		timestampFile(), 
+		experimentNumber(1),
+		recordingNumber(0),
+		isRecording(false)
     {
 		frameBuffer.clear();
         startThread();
@@ -77,11 +92,11 @@ public:
 		}
 	}
 
-	juce::int64 getFrameCount()
+	int64 getFrameCount()
 	{
 		int count;
 		lock.enter();
-		count = frameCounter;
+		count = frameCount;
 		lock.exit();
 
 		return count;
@@ -90,7 +105,7 @@ public:
 	void resetFrameCounter()
 	{
 		lock.enter();
-		frameCounter = 0;
+		frameCount = 0;
 		lock.exit();
 	}
 
@@ -108,7 +123,7 @@ public:
 		lock.exit();
 	}
 
-	bool addFrame(const juce::Image &frame, juce::int64 srcTs, juce::int64 swTs, int quality = 95)
+	bool addFrame(const juce::Image &frame, int64 srcTs, int64 swTs, int quality = 95)
 	{
 		bool status;
 
@@ -182,10 +197,8 @@ public:
 				{
 					lock.enter();
 
-					++frameCounter;
-
 					//fileName = String::formatted("frame_%.10lld_%d_%d.jpg", frameCounter, experimentNumber, recordingNumber);
-					fileName = String::formatted("frame at %.10lld.jpg", frameCounter);
+					fileName = String::formatted("frame at %.10lld.jpg", frameCount);
 		            filePath = String(framePath.getFullPathName() + File::getSeparatorString() + fileName);
 
 					/* TODO: Write to disk
@@ -204,9 +217,11 @@ public:
 					lock.exit();
 
 					lock.enter();
-					line = String::formatted("%lld,%d,%d,%lld,%lld\n", frameCounter, experimentNumber, recordingNumber, frame_ts->getTS(), frame_ts->getSWTS());
+					line = String::formatted("%lld,%d,%d,%lld,%lld\n", frameCount, experimentNumber, recordingNumber, frame_ts->getTS(), frame_ts->getSWTS());
 					lock.exit();
 					timestampFile.appendText(line);
+
+					frameCount++;
 
 				}
 
@@ -218,27 +233,18 @@ public:
         }
     }
 
-private:
-	OwnedArray<FrameWithTS> frameBuffer;
-	juce::int64 frameCounter;
-	int experimentNumber;
-	int recordingNumber;
-	File framePath;
-	File timestampFile;
-	bool isRecording;
-	CriticalSection lock;
-
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WriteThread)
 };
 
 FrameGrabber::FrameGrabber()
     : GenericProcessor("Frame Grabber"), 
 		currentFormatIndex(-1),
-	  frameCounter(0), Thread("FrameGrabberThread"), isRecording(false), framePath(""),
+	  frameCount(0), Thread("FrameGrabberThread"), isRecording(false), framePath(""),
 	  imageQuality(25), colorMode(ColorMode::GRAY), writeMode(ImageWriteMode::RECORDING),
 	  resetFrameCounter(false)
 {
 
+	//TODO: Update this from camera device
 	int width = 960;
 	int height = 720;
 	int maxWidth = 960;
@@ -354,6 +360,8 @@ void FrameGrabber::imageReceived(const juce::Image& image)
 	//LOGD("Received image with timestamp: ", srcTS);
 
 	writeThread->addFrame(image, srcTS, swTS, getImageQuality());
+
+	frameCount++;
 }
 
 void FrameGrabber::startRecording()
@@ -371,6 +379,7 @@ void FrameGrabber::startRecording()
 
 		if (!framePath.exists() && !framePath.isDirectory())
 		{
+			LOGC("Creating directory at ", framePath.getFullPathName().toRawUTF8());
 			Result result = framePath.createDirectory();
 			if (result.failed())
 			{
@@ -525,11 +534,12 @@ int FrameGrabber::getWriteMode()
 	return writeMode;
 }
 
-juce::int64 FrameGrabber::getFrameCount()
+int64 FrameGrabber::getFrameCount()
 {
 	int count;
+
 	lock.enter();
-	count = frameCounter;
+	count = frameCount;
 	lock.exit();
 
 	return count;
@@ -563,11 +573,6 @@ void FrameGrabber::setDirectoryName(String name)
 String FrameGrabber::getDirectoryName()
 {
 	return dirName;
-}
-
-juce::int64 FrameGrabber::getWrittenFrameCount()
-{
-	return writeThread->getFrameCount();
 }
 
 void FrameGrabber::saveCustomParametersToXml(XmlElement* xml)
