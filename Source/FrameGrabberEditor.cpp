@@ -36,35 +36,32 @@ FrameGrabberEditor::FrameGrabberEditor(GenericProcessor* parentNode)
 
 	FrameGrabber* thread = (FrameGrabber*) parentNode;
 
-	sourceLabel = new Label("video source", "Source");
-	sourceLabel->setBounds(10,25,90,20);
-    sourceLabel->setFont(Font("Small Text", 12, Font::plain));
-    sourceLabel->setColour(Label::textColourId, Colours::darkgrey);
-	addAndMakeVisible(sourceLabel);
+	videoSourceLabel = new Label("video source", "Frame source");
+	videoSourceLabel->setBounds(10,25,90,20);
+    videoSourceLabel->setFont(Font("Small Text", 12, Font::plain));
+    videoSourceLabel->setColour(Label::textColourId, Colours::darkgrey);
+	addAndMakeVisible(videoSourceLabel);
 
-    sourceCombo = new ComboBox();
-    sourceCombo->setBounds(110,25,220,20);
-    sourceCombo->addListener(this);
+    videoSourceCombo = new ComboBox();
+    videoSourceCombo->setBounds(110,25,150,20);
+    videoSourceCombo->addListener(this);
 
 	// Populate devices and select the first available device
 	std::vector<std::string> formats = thread->getFormats();
     for (unsigned int i=0; i<formats.size(); i++)
-        sourceCombo->addItem(formats[i], i+1);
-	addAndMakeVisible(sourceCombo);
+        videoSourceCombo->addItem(formats[i], i+1);
+	addAndMakeVisible(videoSourceCombo);
 
-	qualityLabel = new Label("image quality label", "Image quality");
-	qualityLabel->setBounds(10,50,90,20);
-    qualityLabel->setFont(Font("Small Text", 12, Font::plain));
-    qualityLabel->setColour(Label::textColourId, Colours::darkgrey);
-	addAndMakeVisible(qualityLabel);
+	streamSourceLabel = new Label("stream source", "Stream source");
+	streamSourceLabel->setBounds(10,50,90,20);
+    streamSourceLabel->setFont(Font("Small Text", 12, Font::plain));
+    streamSourceLabel->setColour(Label::textColourId, Colours::darkgrey);
+	addAndMakeVisible(streamSourceLabel);
 
-    qualityCombo = new ComboBox();
-    qualityCombo->setBounds(110,50-3,75,20);
-    qualityCombo->addListener(this);
-
-    for (unsigned int i=0; i<=100; i+=5)
-		qualityCombo->addItem(String(i)+"%", i/5);
-	addAndMakeVisible(qualityCombo);
+    streamSourceCombo = new ComboBox();
+    streamSourceCombo->setBounds(110,50,150,20);
+    streamSourceCombo->addListener(this);
+	addAndMakeVisible(streamSourceCombo);
 
 	colorLabel = new Label("color mode label", "Color");
 	colorLabel->setBounds(10,75,50,20);
@@ -95,16 +92,23 @@ FrameGrabberEditor::FrameGrabberEditor(GenericProcessor* parentNode)
 	writeModeCombo->setSelectedItemIndex(thread->getWriteMode(), dontSendNotification);
 	addAndMakeVisible(writeModeCombo);
 
-	fpsLabel = new Label("fps label", "FPS:");
-	fpsLabel->setBounds(200, 50, 50, 20); // 200,100,50,20);
-    fpsLabel->setFont(Font("Small Text", 12, Font::plain));
-    fpsLabel->setColour(Label::textColourId, Colours::darkgrey);
-	addAndMakeVisible(fpsLabel);
-
     refreshButton = new UtilityButton("Refresh", Font ("Small Text", 12, Font::plain));
     refreshButton->addListener(this);
-    refreshButton->setBounds(260, 50, 70, 20);
+    refreshButton->setBounds(270, 25, 70, 20);
     addAndMakeVisible(refreshButton);
+
+	qualityLabel = new Label("image quality label", "Image quality");
+	qualityLabel->setBounds(195,75,90,20);
+    qualityLabel->setFont(Font("Small Text", 12, Font::plain));
+    qualityLabel->setColour(Label::textColourId, Colours::darkgrey);
+	addAndMakeVisible(qualityLabel);
+
+    qualityCombo = new ComboBox();
+    qualityCombo->setBounds(290,75,50,20);
+    qualityCombo->addListener(this);
+	for (unsigned int i=0; i<=100; i+=5)
+		qualityCombo->addItem(String(i)+"%", i/5);
+	addAndMakeVisible(qualityCombo);
 
     resetCounterButton = new UtilityButton("Reset counter",Font("Small Text", 12, Font::plain));
     resetCounterButton->addListener(this);
@@ -112,17 +116,23 @@ FrameGrabberEditor::FrameGrabberEditor(GenericProcessor* parentNode)
     resetCounterButton->setClickingTogglesState(true);
 	resetCounterButton->setToggleState(thread->getResetFrameCounter(), dontSendNotification);
     resetCounterButton->setTooltip("When this button is on, the frame counter will be reset for each new recording");
-    addAndMakeVisible(resetCounterButton);
+    //addAndMakeVisible(resetCounterButton);
 
 	dirNameEdit = new Label("dirName", thread->getDirectoryName());
-    dirNameEdit->setBounds(200,100,130,20);
+    dirNameEdit->setBounds(200,100,140,20);
     dirNameEdit->setFont(Font("Default", 15, Font::plain));
     dirNameEdit->setColour(Label::textColourId, Colours::white);
 	dirNameEdit->setColour(Label::backgroundColourId, Colours::grey);
     dirNameEdit->setEditable(true);
     dirNameEdit->addListener(this);
 	dirNameEdit->setTooltip("Frame directory name");
-	addAndMakeVisible(dirNameEdit);
+	//addAndMakeVisible(dirNameEdit);
+
+	fpsLabel = new Label("fps label", "FPS:");
+	fpsLabel->setBounds(195,100, 50, 20);
+    fpsLabel->setFont(Font("Small Text", 12, Font::plain));
+    fpsLabel->setColour(Label::textColourId, Colours::darkgrey);
+	addAndMakeVisible(fpsLabel);
 
 	startTimer(1000);
 }
@@ -151,8 +161,19 @@ void FrameGrabberEditor::updateSettings()
 	updateDevices();
 	int deviceIndex = thread->getCurrentFormatIndex();
 	if (deviceIndex >= 0)
+		videoSourceCombo->setSelectedItemIndex(deviceIndex, sendNotificationAsync);
+
+	streamSourceCombo->clear(dontSendNotification);
+	if (getProcessor()->getDataStreams().size() > 0)
 	{
-		sourceCombo->setSelectedItemIndex(deviceIndex, sendNotificationAsync);
+		int streamIdx = 0;
+		for (auto& stream : getProcessor()->getDataStreams())
+			streamSourceCombo->addItem(stream->getName(), ++streamIdx);
+		streamSourceCombo->setSelectedItemIndex(thread->getCurrentStreamIndex(), sendNotificationAsync);
+	}
+	else
+	{
+		streamSourceCombo->addItem("No streams available", 1);
 	}
 }
 
@@ -171,7 +192,7 @@ void FrameGrabberEditor::comboBoxChanged(ComboBox* cb)
 		int index = cb->getSelectedItemIndex();
 		thread->setColorMode(index);
     }
-	else if (cb == sourceCombo)
+	else if (cb == videoSourceCombo)
 	{
 		int index = cb->getSelectedItemIndex();
 		if (thread->isCameraRunning())
@@ -179,6 +200,11 @@ void FrameGrabberEditor::comboBoxChanged(ComboBox* cb)
 			thread->stopCamera();
 		}
 		thread->startCamera(index);
+	}
+	else if (cb == streamSourceCombo)
+	{
+		int index = cb->getSelectedItemIndex();
+		thread->setCurrentStreamIndex(index);
 	}
     else if (cb == writeModeCombo)
     {
@@ -222,12 +248,11 @@ void FrameGrabberEditor::updateDevices()
 {
 	FrameGrabber* thread = (FrameGrabber*) getProcessor();
 
-	sourceCombo->clear(dontSendNotification);
+	videoSourceCombo->clear(dontSendNotification);
 	std::vector<std::string> formats = thread->getFormats();
 	for (unsigned int i=0; i<formats.size(); i++)
-	{
-	    sourceCombo->addItem(formats.at(i), i+1);
-	}
+	    videoSourceCombo->addItem(formats.at(i), i+1);
+	videoSourceCombo->setSelectedItemIndex(thread->getCurrentFormatIndex(), dontSendNotification);
 }
 
 
@@ -249,7 +274,8 @@ void FrameGrabberEditor::disableControls()
 
 	if (thread->getWriteMode() == RECORDING)
 	{
-		sourceCombo->setEnabled(false);
+		videoSourceCombo->setEnabled(false);
+		streamSourceCombo->setEnabled(false);
     	qualityCombo->setEnabled(false);
     	colorCombo->setEnabled(false);
     	writeModeCombo->setEnabled(false);
@@ -266,7 +292,8 @@ void FrameGrabberEditor::enableControls()
 	
 	if (thread->getWriteMode() == RECORDING)
 	{
-		sourceCombo->setEnabled(true);
+		videoSourceCombo->setEnabled(true);
+		streamSourceCombo->setEnabled(true);
     	qualityCombo->setEnabled(true);
     	colorCombo->setEnabled(true);
     	writeModeCombo->setEnabled(true);

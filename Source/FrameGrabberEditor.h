@@ -93,8 +93,10 @@ private:
 
     FrameGrabberCanvas* canvas;
 
-	ScopedPointer<ComboBox> sourceCombo;
-	ScopedPointer<Label> sourceLabel;
+	ScopedPointer<ComboBox> videoSourceCombo;
+	ScopedPointer<Label> videoSourceLabel;
+    ScopedPointer<ComboBox> streamSourceCombo;
+    ScopedPointer<Label> streamSourceLabel;
     ScopedPointer<ComboBox> qualityCombo;
     ScopedPointer<Label> qualityLabel;
     ScopedPointer<ComboBox> colorCombo;

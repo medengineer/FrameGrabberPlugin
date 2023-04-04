@@ -239,9 +239,15 @@ public:
 FrameGrabber::FrameGrabber()
     : GenericProcessor("Frame Grabber"), 
 		currentFormatIndex(-1),
-	  frameCount(0), Thread("FrameGrabberThread"), isRecording(false), framePath(""),
-	  imageQuality(25), colorMode(ColorMode::GRAY), writeMode(ImageWriteMode::RECORDING),
-	  resetFrameCounter(false)
+		currentStreamIndex(-1),
+		frameCount(0),
+		Thread("FrameGrabberThread"),
+		isRecording(false),
+		framePath(""),
+		imageQuality(25),
+		colorMode(ColorMode::GRAY),
+		writeMode(ImageWriteMode::RECORDING),
+		resetFrameCounter(false)
 {
 
 	//TODO: Update this from camera device
@@ -268,10 +274,7 @@ FrameGrabber::FrameGrabber()
 		cameraDevice->addListener(this);
 	}
 
-	File recPath = CoreServices::getRecordingParentDirectory();
-	framePath = File(recPath.getFullPathName() + File::getSeparatorString() + CoreServices::getRecordingDirectoryBaseText() + File::getSeparatorString() + dirName);
-
-	    /* Create a File Reader device */
+	/* Create a Camera Device */
     DeviceInfo::Settings settings {
         "Frame Grabber",
         "description",
@@ -302,9 +305,8 @@ AudioProcessorEditor* FrameGrabber::createEditor()
 
 void FrameGrabber::updateSettings()
 {
-
-	/* Does not add any continuous, event or spike channels */
-
+	if (currentStreamIndex < 0)
+		currentStreamIndex = 0;
 }
 
 void FrameGrabber::imageReceived(const juce::Image& image)
@@ -438,6 +440,22 @@ void FrameGrabber::run()
 
 }
 
+void FrameGrabber::setCurrentFormatIndex(int index)
+{
+	lock.enter();
+	//TODO: Connect to a different device (test on Mac with native cam + USB webcam)
+	currentFormatIndex = index;
+	lock.exit();
+}
+
+void FrameGrabber::setCurrentStreamIndex(int index)
+{
+	lock.enter();
+	currentStreamIndex = index;
+	//Next acquisition will use the timestamps from the new stream
+	lock.exit();
+}
+
 void FrameGrabber::setImageQuality(int q)
 {
 	lock.enter();
@@ -523,7 +541,7 @@ void FrameGrabber::setDirectoryName(String name)
 		}
 		else
 		{
-			std::cout << "FrameGrabber invalid directory name: " << name.toStdString() << "\n";
+			LOGC("FrameGrabber invalid directory name: ", name.toStdString());
 		}
 	}
 }

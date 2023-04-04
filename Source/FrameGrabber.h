@@ -96,6 +96,10 @@ public:
 
 	std::vector<std::string> getFormats() { return formats; }
 	int getCurrentFormatIndex() { return currentFormatIndex; }
+	void setCurrentFormatIndex(int index);
+
+	int getCurrentStreamIndex() { return currentStreamIndex; }
+	void setCurrentStreamIndex(int index);
 
 	void setImageQuality(int q);
 	int getImageQuality();
@@ -139,6 +143,7 @@ private:
 	bool resetFrameCounter;
 	String dirName;
 	int currentFormatIndex;
+	int currentStreamIndex;
 	WriteThread* writeThread;
 
 	CriticalSection lock;
