@@ -302,50 +302,8 @@ AudioProcessorEditor* FrameGrabber::createEditor()
 
 void FrameGrabber::updateSettings()
 {
- 	LOGD("Frame Grabber updating  settings.");
 
-	DataStream::Settings streamSettings{
-
-		"Frame Grabber",
-		"description",
-		"identifier",
-		getDefaultSampleRate()
-
-	};
-
-	LOGD("Frame Grabber adding data stream.");
-
-	dataStreams.add(new DataStream(streamSettings));
-	dataStreams.getLast()->addProcessor(processorInfo.get());
-
-	ContinuousChannel::Settings channelSettings
-	{
-		ContinuousChannel::Type::ELECTRODE,
-		"DUMMY_CHANNEL",
-		"description",
-		"filereader.stream",
-		0.195,
-		dataStreams.getLast()
-	};
-
-	continuousChannels.add(new ContinuousChannel(channelSettings));
-	continuousChannels.getLast()->addProcessor(processorInfo.get());
-
-	EventChannel* events;
-
-	EventChannel::Settings eventSettings{
-		EventChannel::Type::TTL,
-		"All TTL events",
-		"All TTL events loaded for the current input data source",
-		"filereader.events",
-		dataStreams.getLast()
-	};
-
-	events = new EventChannel(eventSettings);
-	String id = "sourceevent";
-	events->setIdentifier(id);
-	events->addProcessor(processorInfo.get());
-	eventChannels.add(events);
+	/* Does not add any continuous, event or spike channels */
 
 }
 
