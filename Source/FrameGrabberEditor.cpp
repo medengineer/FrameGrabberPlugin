@@ -107,7 +107,7 @@ FrameGrabberEditor::FrameGrabberEditor(GenericProcessor* parentNode)
     qualityCombo->setBounds(290,75,50,20);
     qualityCombo->addListener(this);
 	for (unsigned int i=0; i<=100; i+=5)
-		qualityCombo->addItem(String(i)+"%", i/5);
+		qualityCombo->addItem(String(i)+"%", i/5 + 1);
 	addAndMakeVisible(qualityCombo);
 
     resetCounterButton = new UtilityButton("Reset counter",Font("Small Text", 12, Font::plain));
@@ -185,7 +185,7 @@ void FrameGrabberEditor::comboBoxChanged(ComboBox* cb)
     if (cb == qualityCombo)
     {
 		int index = cb->getSelectedItemIndex();
-		thread->setImageQuality(5*(index+1));
+		thread->setImageQuality(5*(index));
     }
     else if (cb == colorCombo)
     {
