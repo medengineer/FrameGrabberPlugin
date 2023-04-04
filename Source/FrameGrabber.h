@@ -85,10 +85,10 @@ public:
     bool generatesTimestamps() const override { return true; }
 
 	/* Called at start of acquisition */
-	bool startAcquisition() override { /* TODO */ return true; };
+	bool startAcquisition() override;
 
     /* Called at end of acquisition */
-	bool stopAcquisition() override { /* TODO */ return true; };
+	bool stopAcquisition() override;
 
 	int startCamera(int fmt_index) { /* TODO */ return 0; }
 	int stopCamera() { /* TODO */ return 0; }
@@ -118,6 +118,9 @@ public:
 	void setDirectoryName(String name);
 	String getDirectoryName();
 
+	int getExperimentNumber() { return experimentNumber; }
+	int getRecordingNumber() { return recordingNumber; } 
+
 	void saveCustomParametersToXml(XmlElement* parentElement);
 	void loadCustomParametersFromXml();
 
@@ -145,6 +148,9 @@ private:
 	int currentFormatIndex;
 	int currentStreamIndex;
 	WriteThread* writeThread;
+
+	int experimentNumber;
+	int recordingNumber;
 
 	CriticalSection lock;
 

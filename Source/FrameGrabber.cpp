@@ -37,12 +37,13 @@ class WriteThread : public Thread
 {
 	OwnedArray<FrameWithTS> frameBuffer;
 	juce::int64 frameCount;
-	int experimentNumber;
-	int recordingNumber;
 	File framePath;
 	File timestampFile;
 	bool isRecording;
 	CriticalSection lock;
+
+	int experimentNumber;
+	int recordingNumber;
 
 public:
     WriteThread()
@@ -50,9 +51,9 @@ public:
 		frameCount(0),
 		framePath(),
 		timestampFile(), 
-		experimentNumber(1),
-		recordingNumber(0),
-		isRecording(false)
+		isRecording(false),
+		experimentNumber(0),
+		recordingNumber(0)
     {
 		frameBuffer.clear();
         startThread();
@@ -73,11 +74,6 @@ public:
 
 	void createTimestampFile(String name = "frame_timestamps")
 	{
-
-		if (!framePath.exists() || !framePath.isDirectory())
-		{
-			 framePath.createDirectory();
-		}
 
 		String filePath = framePath.getFullPathName()
 			   + File::getSeparatorString()
@@ -247,7 +243,9 @@ FrameGrabber::FrameGrabber()
 		imageQuality(25),
 		colorMode(ColorMode::GRAY),
 		writeMode(ImageWriteMode::RECORDING),
-		resetFrameCounter(false)
+		resetFrameCounter(false),
+		experimentNumber(0),
+		recordingNumber(0)
 {
 
 	//TODO: Update this from camera device
@@ -324,22 +322,40 @@ void FrameGrabber::imageReceived(const juce::Image& image)
 	frameCount++;
 }
 
+bool FrameGrabber::startAcquisition()
+{
+	experimentNumber++;
+	recordingNumber = 0;
+	return true;
+}
+
+bool FrameGrabber::stopAcquisition()
+{
+	return true;
+}
+
 void FrameGrabber::startRecording()
 {
 
-	dirName = "Frame Grabber " + String(getNodeId());
+	recordingNumber++;
 
 	if (writeMode == RECORDING)
 	{
 		File recPath = CoreServices::getRecordingParentDirectory();
 
-		framePath = File(recPath.getFullPathName() + File::getSeparatorString() + CoreServices::getRecordingDirectoryBaseText() + File::getSeparatorString() + dirName);
+		framePath = File(
+			recPath.getFullPathName() + File::getSeparatorString() + 
+			CoreServices::getRecordingDirectoryBaseText() + File::getSeparatorString() + 
+			"Frame Grabber " + String(getNodeId()) + File::getSeparatorString() +
+			"experiment" + String(experimentNumber) + File::getSeparatorString() +
+			"recording" + String(recordingNumber) + File::getSeparatorString() +
+			dirName);
 
 		LOGD("Writing frames to: ", framePath.getFullPathName().toRawUTF8());
 
 		if (!framePath.exists() && !framePath.isDirectory())
 		{
-			LOGC("Creating directory at ", framePath.getFullPathName().toRawUTF8());
+			LOGD("Creating directory at ", framePath.getFullPathName().toRawUTF8());
 			Result result = framePath.createDirectory();
 			if (result.failed())
 			{
@@ -352,8 +368,8 @@ void FrameGrabber::startRecording()
 		{
 			writeThread->setRecording(false);
 			writeThread->setFramePath(framePath);
-			//writeThread->setExperimentNumber(CoreServices::RecordNode::getExperimentNumber());
-			//writeThread->setRecordingNumber(CoreServices::RecordNode::getRecordingNumber());
+			writeThread->setExperimentNumber(experimentNumber);
+			writeThread->setRecordingNumber(recordingNumber);
 			writeThread->createTimestampFile();
 			if (resetFrameCounter)
 			{
