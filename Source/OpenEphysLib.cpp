@@ -49,7 +49,7 @@ extern "C" EXPORT int getPluginInfo(int index, Plugin::PluginInfo* info)
 	case 0:
 		info->type = Plugin::PROCESSOR;
 		info->processor.name = "Frame Grabber";
-		info->processor.type = Plugin::Processor::SOURCE;
+		info->processor.type = Plugin::Processor::SINK;
 		info->processor.creator = &(Plugin::createProcessor<FrameGrabber>);
 		break;
 	default:
