@@ -168,7 +168,7 @@ void FrameGrabberEditor::updateSettings()
 	{
 		int streamIdx = 0;
 		for (auto& stream : getProcessor()->getDataStreams())
-			streamSourceCombo->addItem(stream->getName(), ++streamIdx);
+			streamSourceCombo->addItem(String(stream->getNodeId()) + '-' + stream->getName(), ++streamIdx);
 		streamSourceCombo->setSelectedItemIndex(thread->getCurrentStreamIndex(), sendNotificationAsync);
 	}
 	else

@@ -312,14 +312,14 @@ void FrameGrabber::updateSettings()
 void FrameGrabber::imageReceived(const juce::Image& image)
 {
 	//Gets called ~15 fps w/ Logitech C920 @ 960x720
-
-	/* Whenever a frame is received, timestamp it and add it to a buffer */
-	juce::int64 srcTS = CoreServices::getGlobalTimestamp();
-	juce::int64 swTS = CoreServices::getSoftwareTimestamp();
-
 	//LOGD("Received image with timestamp: ", srcTS);
-
-	writeThread->addFrame(image, srcTS, swTS, getImageQuality());
+	if (isRecording)
+	{
+		int64 swTS = CoreServices::getSoftwareTimestamp();
+		int streamId = getDataStreams()[currentStreamIndex]->getStreamId();
+		int64 ts = getFirstSampleNumberForBlock(streamId);
+		writeThread->addFrame(image, ts, swTS, getImageQuality());
+	}
 
 	frameCount++;
 }
