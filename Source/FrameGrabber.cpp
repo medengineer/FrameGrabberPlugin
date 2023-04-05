@@ -379,6 +379,9 @@ void FrameGrabber::startRecording()
 
 			FrameGrabberEditor* e = (FrameGrabberEditor*) editor.get();
 			e->disableControls();
+
+			LOGC("Recording to format: ", cameraDevice->getFileExtension());
+			cameraDevice->startRecordingToFile(framePath.getChildFile("video" + cameraDevice->getFileExtension()));
 		}
 	}
 
@@ -390,6 +393,7 @@ void FrameGrabber::stopRecording()
 	isRecording = false;
 	if (writeMode == RECORDING)
 	{
+		cameraDevice->stopRecording();
 		writeThread->setRecording(false);
 		FrameGrabberEditor* e = (FrameGrabberEditor*) editor.get();
 		e->enableControls();
@@ -398,6 +402,7 @@ void FrameGrabber::stopRecording()
 
 void FrameGrabber::process(AudioSampleBuffer& buffer)
 {
+	/*
 	if (CoreServices::getRecordingStatus() && !isRecording)
 	{
 		startRecording();
@@ -406,6 +411,7 @@ void FrameGrabber::process(AudioSampleBuffer& buffer)
 	{
 		stopRecording();
 	}
+	*/
 }
 
 void FrameGrabber::run()
