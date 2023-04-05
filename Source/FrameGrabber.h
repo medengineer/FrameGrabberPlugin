@@ -131,6 +131,8 @@ private:
 
     void imageReceived(const juce::Image& image) override;
 
+	std::map<int64,int64> blockTimestamps;
+
 	void run() override;
 
 	std::vector<std::string> formats;

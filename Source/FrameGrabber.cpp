@@ -310,13 +310,16 @@ void FrameGrabber::updateSettings()
 void FrameGrabber::imageReceived(const juce::Image& image)
 {
 	//Gets called ~15 fps w/ Logitech C920 @ 960x720
-	//LOGD("Received image with timestamp: ", srcTS);
 	if (isRecording)
 	{
-		int64 swTS = CoreServices::getSoftwareTimestamp();
+		int64 swTs = CoreServices::getSoftwareTimestamp();
 		int streamId = getDataStreams()[currentStreamIndex]->getStreamId();
 		int64 ts = getFirstSampleNumberForBlock(streamId);
-		writeThread->addFrame(image, ts, swTS, getImageQuality());
+		int64 offset_in_ms = swTs - blockTimestamps[ts];
+
+		int64 synchronized_ts = ts + offset_in_ms * getDataStreams()[currentStreamIndex]->getSampleRate() / 1000.0f;
+
+		writeThread->addFrame(image, synchronized_ts, swTs, getImageQuality());
 	}
 
 	frameCount++;
@@ -398,20 +401,14 @@ void FrameGrabber::stopRecording()
 		FrameGrabberEditor* e = (FrameGrabberEditor*) editor.get();
 		e->enableControls();
 	}
+	blockTimestamps.clear();
 }
 
 void FrameGrabber::process(AudioSampleBuffer& buffer)
 {
-	/*
-	if (CoreServices::getRecordingStatus() && !isRecording)
-	{
-		startRecording();
-	}
-	else if (!CoreServices::getRecordingStatus() && isRecording)
-	{
-		stopRecording();
-	}
-	*/
+	int streamId = getDataStreams()[currentStreamIndex]->getStreamId();
+	int64 ts = getFirstSampleNumberForBlock(streamId);
+	blockTimestamps[ts] = CoreServices::getSoftwareTimestamp();
 }
 
 void FrameGrabber::run()
