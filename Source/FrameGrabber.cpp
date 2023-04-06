@@ -126,7 +126,13 @@ public:
 		if (isThreadRunning())
 		{
 			lock.enter();
-			frameBuffer.add(new FrameWithTS(frame.createCopy(), srcTs, swTs, quality));
+			if (SAVE_IMAGE_FRAMES)
+				frameBuffer.add(new FrameWithTS(frame.createCopy(), srcTs, swTs, quality));
+			else
+			{
+				juce::Image empty;
+				frameBuffer.add(new FrameWithTS(empty, srcTs, swTs, quality));
+			}
 			lock.exit();
 			status = true;
 		}
@@ -191,26 +197,23 @@ public:
 
 				if (frame_ts != NULL)
 				{
-					lock.enter();
 
-					//fileName = String::formatted("frame_%.10lld_%d_%d.jpg", frameCounter, experimentNumber, recordingNumber);
-					fileName = String::formatted("frame at %.10lld.jpg", frameCount);
-		            filePath = String(framePath.getFullPathName() + File::getSeparatorString() + fileName);
+					if (SAVE_IMAGE_FRAMES)
+					{
+						lock.enter();
 
-					/* TODO: Write to disk
-					std::vector<int> compression_params;
-					compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
-					compression_params.push_back(frame_ts->getImageQuality());
-					cv::imwrite(filePath.toRawUTF8(), (*frame_ts->getFrame()), compression_params);
-					*/
+						//fileName = String::formatted("frame_%.10lld_%d_%d.jpg", frameCounter, experimentNumber, recordingNumber);
+						fileName = String::formatted("frame at %.10lld.jpg", frameCount);
+						filePath = String(framePath.getFullPathName() + File::getSeparatorString() + fileName);
 
-					juce::File outputFile(filePath);
-				    juce::FileOutputStream stream (outputFile);
-					JPEGImageFormat jpegFormat;
-					jpegFormat.setQuality(frame_ts->getImQ());
-					jpegFormat.writeImageToStream(frame_ts->getFrame(), stream);
+						juce::File outputFile(filePath);
+						juce::FileOutputStream stream (outputFile);
+						JPEGImageFormat jpegFormat;
+						jpegFormat.setQuality(frame_ts->getImQ());
+						jpegFormat.writeImageToStream(frame_ts->getFrame(), stream);
 
-					lock.exit();
+						lock.exit();
+					}
 
 					lock.enter();
 					line = String::formatted("%lld,%d,%d,%lld,%lld\n", frameCount, experimentNumber, recordingNumber, frame_ts->getTS(), frame_ts->getSWTS());
@@ -402,6 +405,7 @@ void FrameGrabber::stopRecording()
 		e->enableControls();
 	}
 	blockTimestamps.clear();
+	writeThread->clearBuffer();
 }
 
 void FrameGrabber::process(AudioSampleBuffer& buffer)

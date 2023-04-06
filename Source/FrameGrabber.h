@@ -27,6 +27,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <ProcessorHeaders.h>
 #include "FrameGrabberEditor.h"
 
+#define SAVE_IMAGE_FRAMES false
+
 //TODO: Support other source types
 enum SOURCE_TYPE {
 	WEBCAM = 0,
