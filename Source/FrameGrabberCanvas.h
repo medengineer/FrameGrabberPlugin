@@ -26,7 +26,7 @@
 
 class FrameGrabberEditor;
 
-class CameraView : public juce::Component, public juce::CameraDevice::Listener
+class CameraView : public juce::Component, public CameraDevice::Listener
 {
 public:
     CameraView(FrameGrabber* thread_);

@@ -25,6 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define FRAMEGRABBER_H_INCLUDED
 
 #include <ProcessorHeaders.h>
+
+#include "juce_CameraDevice.h"
 #include "FrameGrabberEditor.h"
 
 #define SAVE_IMAGE_FRAMES false
@@ -65,7 +67,7 @@ enum ImageWriteMode {NEVER = 0, RECORDING = 1, ACQUISITION = 2};
 enum ColorMode {GRAY = 0, RGB = 1};
 
 
-class FrameGrabber : public GenericProcessor, private Thread, public juce::CameraDevice::Listener
+class FrameGrabber : public GenericProcessor, private Thread, public CameraDevice::Listener
 {
 public:
 
