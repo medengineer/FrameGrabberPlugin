@@ -151,7 +151,7 @@ private:
 	String dirName;
 	int currentFormatIndex;
 	int currentStreamIndex;
-	WriteThread* writeThread;
+	std::unique_ptr<WriteThread> writeThread;
 
 	int experimentNumber;
 	int recordingNumber;

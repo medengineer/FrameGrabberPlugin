@@ -285,7 +285,7 @@ FrameGrabber::FrameGrabber()
     };
     devices.add(new DeviceInfo(settings));
 
-	writeThread = new WriteThread();
+	writeThread = std::make_unique<WriteThread>();
 
 	isEnabled = hasCameraDevice;
 
@@ -293,8 +293,15 @@ FrameGrabber::FrameGrabber()
 
 FrameGrabber::~FrameGrabber()
 {
+	if (cameraDevice != nullptr)
+	{
+		cameraDevice->removeListener(this);
+		delete cameraDevice;
+	}
     signalThreadShouldExit();
     notify();
+
+
 }
 
 AudioProcessorEditor* FrameGrabber::createEditor()
