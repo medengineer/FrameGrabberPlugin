@@ -86,9 +86,6 @@ public:
 	void labelTextChanged(juce::Label *);
 	void timerCallback();
 
-    void disableControls();
-	void enableControls();
-
 private:
 
     FrameGrabberCanvas* canvas;

@@ -32,109 +32,20 @@ FrameGrabberEditor::FrameGrabberEditor(GenericProcessor* parentNode)
     : VisualizerEditor(parentNode, "FrameGrabber"), lastFrameCount(0)
 
 {
-    desiredWidth = 350;
+    desiredWidth = 280;
 
 	FrameGrabber* thread = (FrameGrabber*) parentNode;
 
-	videoSourceLabel = new Label("video source", "Frame source");
-	videoSourceLabel->setBounds(10,25,90,20);
-    videoSourceLabel->setFont(Font("Small Text", 12, Font::plain));
-    videoSourceLabel->setColour(Label::textColourId, Colours::darkgrey);
-	addAndMakeVisible(videoSourceLabel);
+	addComboBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "video_source", 10, 29);
+	addSelectedStreamParameterEditor (Parameter::PROCESSOR_SCOPE, "stream_source", 10, 54);
+	addComboBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "image_quality", 10, 79);
+	addPathParameterEditor(Parameter::PROCESSOR_SCOPE, "directory_name", 10, 104);
 
-    videoSourceCombo = new ComboBox();
-    videoSourceCombo->setBounds(110,25,150,20);
-    videoSourceCombo->addListener(this);
-
-	// Populate devices and select the first available device
-	std::vector<std::string> formats = thread->getFormats();
-    for (unsigned int i=0; i<formats.size(); i++)
-        videoSourceCombo->addItem(formats[i], i+1);
-	addAndMakeVisible(videoSourceCombo);
-
-	streamSourceLabel = new Label("stream source", "Stream source");
-	streamSourceLabel->setBounds(10,50,90,20);
-    streamSourceLabel->setFont(Font("Small Text", 12, Font::plain));
-    streamSourceLabel->setColour(Label::textColourId, Colours::darkgrey);
-	addAndMakeVisible(streamSourceLabel);
-
-    streamSourceCombo = new ComboBox();
-    streamSourceCombo->setBounds(110,50,150,20);
-    streamSourceCombo->addListener(this);
-	addAndMakeVisible(streamSourceCombo);
-
-	colorLabel = new Label("color mode label", "Color");
-	colorLabel->setBounds(10,75,50,20);
-    colorLabel->setFont(Font("Small Text", 12, Font::plain));
-    colorLabel->setColour(Label::textColourId, Colours::darkgrey);
-	addAndMakeVisible(colorLabel);
-
-    colorCombo = new ComboBox();
-    colorCombo->setBounds(110,75,75,20);
-    colorCombo->addListener(this);
-    colorCombo->addItem("Gray", 1);
-	colorCombo->addItem("RGB", 2);
-	colorCombo->setSelectedItemIndex(thread->getColorMode(), dontSendNotification);
-	addAndMakeVisible(colorCombo);
-
-	writeModeLabel = new Label("write mode label", "Save frames");
-	writeModeLabel->setBounds(10,100,150,20);
-    writeModeLabel->setFont(Font("Small Text", 12, Font::plain));
-    writeModeLabel->setColour(Label::textColourId, Colours::darkgrey);
-	addAndMakeVisible(writeModeLabel);
-
-    writeModeCombo = new ComboBox();
-    writeModeCombo->setBounds(110,100,75,20);
-    writeModeCombo->addListener(this);
-	writeModeCombo->addItem("Never", ImageWriteMode::NEVER+1);
-    writeModeCombo->addItem("Recording", ImageWriteMode::RECORDING+1);
-//	writeModeCombo->addItem("Acquisition", ImageWriteMode::ACQUISITION+1);
-	writeModeCombo->setSelectedItemIndex(thread->getWriteMode(), dontSendNotification);
-	addAndMakeVisible(writeModeCombo);
-
-    refreshButton = new UtilityButton("Refresh", Font ("Small Text", 12, Font::plain));
-    refreshButton->addListener(this);
-    refreshButton->setBounds(270, 25, 70, 20);
-    addAndMakeVisible(refreshButton);
-
-	qualityLabel = new Label("image quality label", "Image quality");
-	qualityLabel->setBounds(195,75,90,20);
-    qualityLabel->setFont(Font("Small Text", 12, Font::plain));
-    qualityLabel->setColour(Label::textColourId, Colours::darkgrey);
-	addAndMakeVisible(qualityLabel);
-
-    qualityCombo = new ComboBox();
-    qualityCombo->setBounds(290,75,50,20);
-    qualityCombo->addListener(this);
-	for (unsigned int i=0; i<=100; i+=5)
-		qualityCombo->addItem(String(i)+"%", i/5 + 1);
-	addAndMakeVisible(qualityCombo);
-
-    resetCounterButton = new UtilityButton("Reset counter",Font("Small Text", 12, Font::plain));
-    resetCounterButton->addListener(this);
-    resetCounterButton->setBounds(200,75,130,20);
-    resetCounterButton->setClickingTogglesState(true);
-	resetCounterButton->setToggleState(thread->getResetFrameCounter(), dontSendNotification);
-    resetCounterButton->setTooltip("When this button is on, the frame counter will be reset for each new recording");
-    //addAndMakeVisible(resetCounterButton);
-
-	dirNameEdit = new Label("dirName", thread->getDirectoryName());
-    dirNameEdit->setBounds(200,100,140,20);
-    dirNameEdit->setFont(Font("Default", 15, Font::plain));
-    dirNameEdit->setColour(Label::textColourId, Colours::white);
-	dirNameEdit->setColour(Label::backgroundColourId, Colours::grey);
-    dirNameEdit->setEditable(true);
-    dirNameEdit->addListener(this);
-	dirNameEdit->setTooltip("Frame directory name");
-	//addAndMakeVisible(dirNameEdit);
-
-	fpsLabel = new Label("fps label", "FPS:");
-	fpsLabel->setBounds(195,100, 50, 20);
-    fpsLabel->setFont(Font("Small Text", 12, Font::plain));
-    fpsLabel->setColour(Label::textColourId, Colours::darkgrey);
-	addAndMakeVisible(fpsLabel);
-
-	startTimer(1000);
+	for (auto& p : {"video_source", "stream_source", "image_quality", "directory_name"})
+    {
+        auto* ed = getParameterEditor(p);
+        ed->setBounds(ed->getX(), ed->getY(), desiredWidth, ed->getHeight());
+    }
 }
 
 
@@ -151,30 +62,6 @@ Visualizer* FrameGrabberEditor::createNewCanvas(void)
 
 void FrameGrabberEditor::updateSettings()
 {
-
-	FrameGrabber* thread = (FrameGrabber*) getProcessor();
-
-	qualityCombo->setSelectedItemIndex(thread->getImageQuality()/5-1, dontSendNotification);
-	colorCombo->setSelectedItemIndex(thread->getColorMode(), dontSendNotification);
-	writeModeCombo->setSelectedItemIndex(thread->getWriteMode(), dontSendNotification);
-
-	updateDevices();
-	int deviceIndex = thread->getCurrentFormatIndex();
-	if (deviceIndex >= 0)
-		videoSourceCombo->setSelectedItemIndex(deviceIndex, sendNotificationAsync);
-
-	streamSourceCombo->clear(dontSendNotification);
-	if (getProcessor()->getDataStreams().size() > 0)
-	{
-		int streamIdx = 0;
-		for (auto& stream : getProcessor()->getDataStreams())
-			streamSourceCombo->addItem(String(stream->getNodeId()) + '-' + stream->getName(), ++streamIdx);
-		streamSourceCombo->setSelectedItemIndex(thread->getCurrentStreamIndex(), sendNotificationAsync);
-	}
-	else
-	{
-		streamSourceCombo->addItem("No streams available", 1);
-	}
 }
 
 void FrameGrabberEditor::comboBoxChanged(ComboBox* cb)
@@ -246,6 +133,7 @@ void FrameGrabberEditor::labelTextChanged(juce::Label *label)
 
 void FrameGrabberEditor::updateDevices()
 {
+	/*
 	FrameGrabber* thread = (FrameGrabber*) getProcessor();
 
 	videoSourceCombo->clear(dontSendNotification);
@@ -253,6 +141,7 @@ void FrameGrabberEditor::updateDevices()
 	for (unsigned int i=0; i<formats.size(); i++)
 	    videoSourceCombo->addItem(formats.at(i), i+1);
 	videoSourceCombo->setSelectedItemIndex(thread->getCurrentFormatIndex(), dontSendNotification);
+	*/
 }
 
 
@@ -264,42 +153,5 @@ void FrameGrabberEditor::timerCallback()
 	int64 fps = frameCount - lastFrameCount;
 	lastFrameCount = frameCount;
 
-	fpsLabel->setText(String("FPS: ") + String(fps), dontSendNotification);
+	//fpsLabel->setText(String("FPS: ") + String(fps), dontSendNotification);
 }
-
-
-void FrameGrabberEditor::disableControls()
-{
-	FrameGrabber* thread = (FrameGrabber*) getProcessor(); 
-
-	if (thread->getWriteMode() == RECORDING)
-	{
-		videoSourceCombo->setEnabled(false);
-		streamSourceCombo->setEnabled(false);
-    	qualityCombo->setEnabled(false);
-    	colorCombo->setEnabled(false);
-    	writeModeCombo->setEnabled(false);
-		refreshButton->setEnabledState(false);
-		resetCounterButton->setEnabledState(false);
-		dirNameEdit->setEditable(false);
-	}
-}
-
-
-void FrameGrabberEditor::enableControls()
-{
-	FrameGrabber* thread = (FrameGrabber*) getProcessor();
-	
-	if (thread->getWriteMode() == RECORDING)
-	{
-		videoSourceCombo->setEnabled(true);
-		streamSourceCombo->setEnabled(true);
-    	qualityCombo->setEnabled(true);
-    	colorCombo->setEnabled(true);
-    	writeModeCombo->setEnabled(true);
-		refreshButton->setEnabledState(true);
-		resetCounterButton->setEnabledState(true);
-		dirNameEdit->setEditable(true);
-	}
-}
-

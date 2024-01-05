@@ -251,29 +251,26 @@ FrameGrabber::FrameGrabber()
 		recordingNumber(0)
 {
 
-	//TODO: Update this from camera device
-	int width = 960;
-	int height = 720;
-	int maxWidth = 960;
-	int maxHeight = 720;
-	bool highQuality = false;
-
 	if (CameraDevice::getAvailableDevices().size())
 	{
 		hasCameraDevice = true;
 		currentFormatIndex = 0;
-		cameraDevice = CameraDevice::openDevice(
-			currentFormatIndex);
-			// width,
-			// height,
-			// maxWidth,
-			// maxHeight,
-			// highQuality);
+		cameraDevice = CameraDevice::openDevice(currentFormatIndex);
+
 		for (auto& device : CameraDevice::getAvailableDevices())
-			formats.push_back(device.toStdString());
+			availableDevices.add(device.toStdString());
 
 		cameraDevice->addListener(this);
 	}
+
+	addCategoricalParameter(Parameter::PROCESSOR_SCOPE, "video_source", "Video Source", "The device used to grab frames", availableDevices, 0, true);
+	addSelectedStreamParameter(Parameter::PROCESSOR_SCOPE, "stream_source", "Stream Source", "The stream to synchronize frames with", {}, 0);
+
+	Array<String> imageQualityOptions = { "1%", "25%", "50%", "75%", "100%" };
+	addCategoricalParameter(Parameter::PROCESSOR_SCOPE, "image_quality", "Image Quality", "The quality of the saved images", imageQualityOptions, 0, true);
+
+	String defaultRecordDirectory = CoreServices::getRecordingParentDirectory().getFullPathName();
+	addPathParameter(Parameter::PROCESSOR_SCOPE, "directory_name", "Write Directory", "The directory where video files will be saved", defaultRecordDirectory, {}, true);
 
 	/* Create a Camera Device */
     DeviceInfo::Settings settings {
@@ -283,6 +280,7 @@ FrameGrabber::FrameGrabber()
         "00000x003",
         "Open Ephys"
     };
+
     devices.add(new DeviceInfo(settings));
 
 	writeThread = std::make_unique<WriteThread>();
@@ -390,9 +388,6 @@ void FrameGrabber::startRecording()
 			}
 			writeThread->setRecording(true);
 
-			FrameGrabberEditor* e = (FrameGrabberEditor*) editor.get();
-			e->disableControls();
-
 			LOGC("Recording to format: ", cameraDevice->getFileExtension());
 			cameraDevice->startRecordingToFile(framePath.getChildFile("video" + cameraDevice->getFileExtension()));
 		}
@@ -409,7 +404,6 @@ void FrameGrabber::stopRecording()
 		cameraDevice->stopRecording();
 		writeThread->setRecording(false);
 		FrameGrabberEditor* e = (FrameGrabberEditor*) editor.get();
-		e->enableControls();
 	}
 	blockTimestamps.clear();
 	writeThread->clearBuffer();

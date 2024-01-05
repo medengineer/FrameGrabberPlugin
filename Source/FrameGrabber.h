@@ -98,7 +98,7 @@ public:
 	int stopCamera() { /* TODO */ return 0; }
 	bool isCameraRunning() { /* TODO */ return false; }
 
-	std::vector<std::string> getFormats() { return formats; }
+	Array<String> getDevices() { return availableDevices; }
 	int getCurrentFormatIndex() { return currentFormatIndex; }
 	void setCurrentFormatIndex(int index);
 
@@ -139,7 +139,7 @@ private:
 
 	void run() override;
 
-	std::vector<std::string> formats;
+	Array<String> availableDevices;
 
 	int64 frameCount;
 
