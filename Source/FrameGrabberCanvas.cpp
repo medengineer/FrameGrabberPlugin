@@ -26,86 +26,25 @@ along with this program.If not, see < http://www.gnu.org/licenses/>.
 #include "FrameGrabberEditor.h"
 #include "FrameGrabber.h"
 
-CameraView::CameraView(FrameGrabber* thread_) : thread(thread_)
-{
-    if (thread->hasCameraDevice)
-        thread->cameraDevice->addListener(this);
-}
-
-CameraView::~CameraView()
-{
-}
-
-void CameraView::paint(juce::Graphics& g)
-{
-
-    g.fillAll(juce::Colours::black);
-
-    Rectangle<int> bounds = getLocalBounds();
-
-    g.drawImageWithin(
-        cameraImage,
-        bounds.getX(), 
-        bounds.getY(),
-        bounds.getWidth(),
-        bounds.getHeight(),
-        juce::RectanglePlacement::stretchToFit, false);
-}
-
-void CameraView::resized()
-{
-}
-
-void CameraView::imageReceived(const juce::Image& image)
-{
-    //TODO: This hits an assert in debug mode on GUI quit.
-    // Need to stop the camera device before the GUI quits.
-    MessageManagerLock mml;
-
-    if (thread->getColorMode() == 0)
-    {
-        // Generate a grayscale image
-        Image grayscaleImage = Image(Image::PixelFormat::RGB, image.getWidth(), image.getHeight(), true);
-        for (int w = 0; w < image.getWidth(); w++)
-        {
-            for (int h = 0; h < image.getHeight(); h++)
-            {
-                auto pixel = image.getPixelAt(w, h);
-                auto gray = (pixel.getRed() + pixel.getGreen() + pixel.getBlue()) / 3.0f;
-                grayscaleImage.setPixelAt(w, h, Colour(gray, gray, gray));
-            }
-        }
-        cameraImage = grayscaleImage;
-    }
-    else
-    {
-        cameraImage = image;
-    }
-    repaint();
-}
-
 
 FrameGrabberCanvas::FrameGrabberCanvas(FrameGrabber* thread_, FrameGrabberEditor* editor_) : 
     thread(thread_),
     editor(editor_)
 {
-    cameraViewport = new Viewport();
+    cameraViewport = std::make_unique<Viewport>();
 
-    cameraView = std::make_unique<CameraView>(thread);
+    cameraView = thread->cameraDevice->createViewerComponent();
+    cameraView->setBounds(0, 0, 640, 480);
 
-    cameraView->setBounds(100, 100, 640, 480);
-    cameraView->setVisible(true);
-
-    cameraViewport->setViewedComponent(cameraView.get(), false);
-    addAndMakeVisible(cameraViewport);
+    cameraViewport->setViewedComponent(cameraView, false);
+    addAndMakeVisible(cameraViewport.get());
 
     resized();
-
 }
 
 FrameGrabberCanvas::~FrameGrabberCanvas()
 {
-
+    delete cameraView;
 }
 
 void FrameGrabberCanvas::paint(Graphics& g)

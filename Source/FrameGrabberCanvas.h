@@ -26,26 +26,6 @@
 
 class FrameGrabberEditor;
 
-class CameraView : public juce::Component, public CameraDevice::Listener
-{
-public:
-    CameraView(FrameGrabber* thread_);
-    ~CameraView() override;
-
-    void paint(juce::Graphics&) override;
-    void resized() override;
-
-private:
-
-	FrameGrabber* thread;
-
-    void imageReceived(const juce::Image& image) override;
-
-    juce::Image cameraImage;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CameraView)
-};
-
 /** 
 
 	Holds the visualizer for additional probe settings
@@ -89,9 +69,9 @@ public:
 	/** Sets bounds of sub-components*/
 	void resized();
 
-	ScopedPointer<Viewport> cameraViewport;
+	std::unique_ptr<Viewport> cameraViewport;
 
-    std::unique_ptr<CameraView> cameraView;
+    Component* cameraView;
 
 	FrameGrabberEditor* editor;
     FrameGrabber* thread;

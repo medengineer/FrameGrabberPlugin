@@ -26,7 +26,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <ProcessorHeaders.h>
 
-#include "juce_CameraDevice.h"
 #include "FrameGrabberEditor.h"
 
 #define SAVE_IMAGE_FRAMES false
@@ -67,7 +66,7 @@ enum ImageWriteMode {NEVER = 0, RECORDING = 1, ACQUISITION = 2};
 enum ColorMode {GRAY = 0, RGB = 1};
 
 
-class FrameGrabber : public GenericProcessor, private Thread, public CameraDevice::Listener
+class FrameGrabber : public GenericProcessor,  public CameraDevice::Listener
 {
 public:
 
@@ -99,8 +98,8 @@ public:
 	bool isCameraRunning() { /* TODO */ return false; }
 
 	Array<String> getDevices() { return availableDevices; }
-	int getCurrentFormatIndex() { return currentFormatIndex; }
-	void setCurrentFormatIndex(int index);
+	int getCurrentDevice() { return currentDeviceIndex; }
+	void setCurrentDevice(int index);
 
 	int getCurrentStreamIndex() { return currentStreamIndex; }
 	void setCurrentStreamIndex(int index);
@@ -128,16 +127,20 @@ public:
 	void saveCustomParametersToXml(XmlElement* parentElement);
 	void loadCustomParametersFromXml();
 
-	CameraDevice* cameraDevice;
+	std::unique_ptr<CameraDevice> cameraDevice;
 	bool hasCameraDevice { false };
 
+	bool threadShouldExit { false };
+
 private:
+
+	bool firstImageReceived { false };
 
     void imageReceived(const juce::Image& image) override;
 
 	std::map<int64,int64> blockTimestamps;
 
-	void run() override;
+	//void run() override;
 
 	Array<String> availableDevices;
 
@@ -151,7 +154,7 @@ private:
 	int writeMode;
 	bool resetFrameCounter;
 	String dirName;
-	int currentFormatIndex;
+	int currentDeviceIndex;
 	int currentStreamIndex;
 	std::unique_ptr<WriteThread> writeThread;
 

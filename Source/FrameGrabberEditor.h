@@ -86,6 +86,8 @@ public:
 	void labelTextChanged(juce::Label *);
 	void timerCallback();
 
+    void setCameraViewportSize(int width, int height);
+
 private:
 
     FrameGrabberCanvas* canvas;

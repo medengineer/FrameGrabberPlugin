@@ -46,6 +46,8 @@ FrameGrabberEditor::FrameGrabberEditor(GenericProcessor* parentNode)
         auto* ed = getParameterEditor(p);
         ed->setBounds(ed->getX(), ed->getY(), desiredWidth, ed->getHeight());
     }
+
+	checkForCanvas();
 }
 
 
@@ -58,6 +60,15 @@ Visualizer* FrameGrabberEditor::createNewCanvas(void)
 	FrameGrabber* thread = (FrameGrabber*) getProcessor();
     canvas = new FrameGrabberCanvas(thread, this);
     return canvas;
+}
+
+void FrameGrabberEditor::setCameraViewportSize(int width, int height)
+{
+	if (canvas != nullptr)
+	{
+		canvas->cameraViewport->setBounds(0, 0, width, height);
+		canvas->cameraView->setBounds(0, 0, width, height);
+	}
 }
 
 void FrameGrabberEditor::updateSettings()
