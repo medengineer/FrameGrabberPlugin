@@ -43,19 +43,16 @@ class FrameWithTS
 {
     public:
 	    FrameWithTS(
-            const T frame_,
             int64 ts_,
             int64 swTs_,
 			int imQ_
-        ) : frame(frame_), ts(ts_), swTs(swTs_), imQ(imQ_) {};
+        ) : ts(ts_), swTs(swTs_), imQ(imQ_) {};
 
-        const T &getFrame() const { return frame; }
         int64 getTS() const { return ts; }
         int64 getSWTS() const { return swTs; }
         int getImQ() const { return imQ; }
 
     private:
-        const T frame;
         int64 ts, swTs;
         int imQ;
 };

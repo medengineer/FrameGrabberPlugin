@@ -126,8 +126,7 @@ public:
 		if (isThreadRunning())
 		{
 			lock.enter();
-			juce::Image empty;
-			frameBuffer.add(new FrameWithTS(empty, srcTs, swTs, quality));
+			frameBuffer.add(new FrameWithTS(srcTs, swTs, quality));
 			lock.exit();
 			status = true;
 		}
@@ -205,7 +204,7 @@ public:
 						juce::FileOutputStream stream (outputFile);
 						JPEGImageFormat jpegFormat;
 						jpegFormat.setQuality(frame_ts->getImQ());
-						jpegFormat.writeImageToStream(frame_ts->getFrame(), stream);
+						//jpegFormat.writeImageToStream(frame_ts->getFrame(), stream);
 
 						lock.exit();
 					}
@@ -275,7 +274,6 @@ FrameGrabber::FrameGrabber()
 	writeThread = std::make_unique<WriteThread>();
 
 	isEnabled = hasCameraDevice;
-
 }
 
 FrameGrabber::~FrameGrabber()
@@ -299,7 +297,7 @@ void FrameGrabber::updateSettings()
 void FrameGrabber::imageReceived(const juce::Image& image)
 {
 
-	LOGD("Width: ", image.getWidth(), " Height: ", image.getHeight());
+	//LOGD("Width: ", image.getWidth(), " Height: ", image.getHeight());
 	if (!headlessMode && !firstImageReceived)
 	{
 		static_cast<FrameGrabberEditor*>(editor.get())->setCameraViewportSize(image.getWidth(), image.getHeight());
