@@ -281,10 +281,46 @@ AudioProcessorEditor* FrameGrabber::createEditor()
     return editor.get();
 }
 
+void FrameGrabber::parameterValueChanged (Parameter* 	p)
+{
+	if (p->getName() == "video_source")
+	{
+		currentDeviceIndex = p->getValue();
+		cameraDevice.release();
+		Time::waitForMillisecondCounter(Time::getMillisecondCounter() + 1000);
+		cameraDevice.reset(CameraDevice::openDevice(currentDeviceIndex));
+		getEditor()->updateSettings();
+	}
+	/*
+	else if (parameter->isParameter ("stream_source"))
+	{
+		setCurrentStreamIndex (parameter->getValue());
+	}
+	else if (parameter->isParameter ("image_quality"))
+	{
+		setImageQuality (parameter->getValue());
+	}
+	else if (parameter->isParameter ("color_mode"))
+	{
+		setColorMode (parameter->getValue());
+	}
+	else if (parameter->isParameter ("write_mode"))
+	{
+		setWriteMode (parameter->getValue());
+	}
+	else if (parameter->isParameter ("reset_frame_counter"))
+	{
+		setResetFrameCounter (parameter->getValue());
+	}
+	else if (parameter->isParameter ("directory_name"))
+	{
+		setDirectoryName (parameter->getValueAsString());
+	}
+	*/
+}
+
 void FrameGrabber::updateSettings()
 {
-    if (currentStreamIndex < 0)
-        currentStreamIndex = 0;
 }
 
 void FrameGrabber::imageReceived (const juce::Image& image)
@@ -444,10 +480,16 @@ void FrameGrabber::run()
 
 void FrameGrabber::setCurrentDevice (int index)
 {
-    lock.enter();
-    //TODO: Connect to a different device (test on Mac with native cam + USB webcam)
+	LOGC( "Got index: ", index);
     currentDeviceIndex = index;
-    lock.exit();
+	CameraDevice* newDevice = CameraDevice::openDevice (currentDeviceIndex);
+	if (newDevice != nullptr)
+	{
+    	cameraDevice.reset (newDevice);
+		getEditor()->updateSettings();
+	}
+	else
+		LOGC( "Failed to open device at index: ", index)
 }
 
 void FrameGrabber::setCurrentStreamIndex (int index)

@@ -51,7 +51,7 @@ public:
 
     /** Called when the Visualizer is first created, and optionally when
 		the parameters of the underlying processor are changed */
-    void update();
+    void updateSettings() override;
 
     /** Starts animation of sub-interfaces */
     void startAcquisition();

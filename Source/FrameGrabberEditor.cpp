@@ -63,13 +63,14 @@ void FrameGrabberEditor::setCameraViewportSize (int width, int height)
 {
     if (canvas != nullptr)
     {
-        canvas->cameraViewport->setBounds (0, 0, width, height);
+        //canvas->cameraViewport->setBounds (0, 0, width, height);
         canvas->cameraView->setBounds (0, 0, width, height);
     }
 }
 
 void FrameGrabberEditor::updateSettings()
 {
+	canvas->updateSettings();
 }
 
 void FrameGrabberEditor::comboBoxChanged (ComboBox* cb)

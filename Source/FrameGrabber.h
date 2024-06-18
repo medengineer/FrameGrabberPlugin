@@ -85,6 +85,8 @@ public:
     /* Updates the FileReader settings*/
     void updateSettings() override;
 
+	void parameterValueChanged (Parameter* p) override;
+
     void process (AudioBuffer<float>& buffer);
 
     void startRecording();

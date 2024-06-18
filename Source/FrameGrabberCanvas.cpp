@@ -60,8 +60,14 @@ void FrameGrabberCanvas::refreshState()
     resized();
 }
 
-void FrameGrabberCanvas::update()
+void FrameGrabberCanvas::updateSettings()
 {
+
+    cameraViewport->setViewedComponent (nullptr, false);
+    cameraView = thread->cameraDevice->createViewerComponent();
+    cameraView->setBounds (0, 0, 640, 480);
+
+    cameraViewport->setViewedComponent (cameraView, false);
 }
 
 void FrameGrabberCanvas::resized()
