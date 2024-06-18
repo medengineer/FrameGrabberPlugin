@@ -72,7 +72,7 @@ public:
 
 	AudioProcessorEditor* createEditor() override;
 
-	String handleConfigMessage(String msg) override { return "TODO"; }
+	String handleConfigMessage(const String& msg) override { return "TODO"; }
 
 	/* Updates the FileReader settings*/
     void updateSettings() override;

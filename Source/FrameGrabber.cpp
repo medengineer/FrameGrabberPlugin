@@ -307,7 +307,7 @@ void FrameGrabber::imageReceived(const juce::Image& image)
 	//Gets called ~15 fps w/ Logitech C920 @ 960x720
 	if (isRecording)
 	{
-		int64 swTs = CoreServices::getSoftwareTimestamp();
+		int64 swTs = CoreServices::getSystemTime();
 		int streamId = getDataStreams()[currentStreamIndex]->getStreamId();
 		int64 ts = getFirstSampleNumberForBlock(streamId);
 		int64 offset_in_ms = swTs - blockTimestamps[ts];
@@ -405,7 +405,7 @@ void FrameGrabber::process(AudioSampleBuffer& buffer)
 {
 	int streamId = getDataStreams()[currentStreamIndex]->getStreamId();
 	int64 ts = getFirstSampleNumberForBlock(streamId);
-	blockTimestamps[ts] = CoreServices::getSoftwareTimestamp();
+	blockTimestamps[ts] = CoreServices::getSystemTime();
 }
 
 /*
