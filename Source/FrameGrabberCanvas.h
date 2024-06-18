@@ -2,7 +2,7 @@
     ------------------------------------------------------------------
 
     This file is part of the Open Ephys GUI
-    Copyright (C) 2023 Allen Institute for Brain Science and Open Ephys
+    Copyright (C) 2024 Open Ephys
 
     ------------------------------------------------------------------
 
@@ -21,8 +21,8 @@
 
 */
 
-#include <VisualizerEditorHeaders.h>
 #include "FrameGrabber.h"
+#include <VisualizerEditorHeaders.h>
 
 class FrameGrabberEditor;
 
@@ -34,48 +34,46 @@ class FrameGrabberEditor;
 class FrameGrabberCanvas : public Visualizer
 {
 public:
+    /** Constructor */
+    FrameGrabberCanvas (FrameGrabber*, FrameGrabberEditor*);
 
-	/** Constructor */
-	FrameGrabberCanvas(FrameGrabber*, FrameGrabberEditor*);
+    /** Destructor */
+    ~FrameGrabberCanvas();
 
-	/** Destructor */
-	~FrameGrabberCanvas();
+    /** Fills background */
+    void paint (Graphics& g);
 
-	/** Fills background */
-	void paint(Graphics& g);
+    /** Renders the Visualizer on each animation callback cycle */
+    void refresh();
 
-	/** Renders the Visualizer on each animation callback cycle */
-	void refresh();
+    /** Called when the Visualizer's tab becomes visible after being hidden */
+    void refreshState();
 
-	/** Called when the Visualizer's tab becomes visible after being hidden */
-	void refreshState();
-
-	/** Called when the Visualizer is first created, and optionally when
+    /** Called when the Visualizer is first created, and optionally when
 		the parameters of the underlying processor are changed */
-	void update();
+    void update();
 
-	/** Starts animation of sub-interfaces */
-	void startAcquisition();
+    /** Starts animation of sub-interfaces */
+    void startAcquisition();
 
-	/** Stops animation of sub-interfaces */
-	void stopAcquisition();
+    /** Stops animation of sub-interfaces */
+    void stopAcquisition();
 
-	/** Saves custom UI settings */
-	void saveCustomParametersToXml(XmlElement* xml) override;
+    /** Saves custom UI settings */
+    void saveCustomParametersToXml (XmlElement* xml) override;
 
-	/** Loads custom UI settings*/
-	void loadCustomParametersFromXml(XmlElement* xml) override;
+    /** Loads custom UI settings*/
+    void loadCustomParametersFromXml (XmlElement* xml) override;
 
-	/** Sets bounds of sub-components*/
-	void resized();
+    /** Sets bounds of sub-components*/
+    void resized();
 
-	std::unique_ptr<Viewport> cameraViewport;
+    std::unique_ptr<Viewport> cameraViewport;
 
     Component* cameraView;
 
-	FrameGrabberEditor* editor;
+    FrameGrabberEditor* editor;
     FrameGrabber* thread;
 
-	GenericProcessor* processor;
-
+    GenericProcessor* processor;
 };

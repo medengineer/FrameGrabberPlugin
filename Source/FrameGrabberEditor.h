@@ -2,7 +2,7 @@
     ------------------------------------------------------------------
 
     This file is part of the Open Ephys GUI
-    Copyright (C) 2014 Open Ephys
+    Copyright (C) 2024 Open Ephys
 
     ------------------------------------------------------------------
 
@@ -24,9 +24,8 @@
 #ifndef __FRAMEGRABBEREDITOR_H__
 #define __FRAMEGRABBEREDITOR_H__
 
-
-#include <VisualizerEditorHeaders.h>
 #include "FrameGrabber.h"
+#include <VisualizerEditorHeaders.h>
 
 class FrameGrabberCanvas;
 
@@ -38,62 +37,60 @@ class FrameGrabberCanvas;
 
 */
 
-class FrameGrabberEditor : 
-    public VisualizerEditor, 
-    public ComboBox::Listener,
-    public Label::Listener,
-    public Button::Listener,
-    public Timer
+class FrameGrabberEditor : public VisualizerEditor,
+                           public ComboBox::Listener,
+                           public Label::Listener,
+                           public Button::Listener,
+                           public Timer
 
 {
 public:
-    FrameGrabberEditor(GenericProcessor* parentNode);
+    FrameGrabberEditor (GenericProcessor* parentNode);
     virtual ~FrameGrabberEditor();
 
     /** Called when editor is collapsed */
-	void collapsedStateChanged() override { /*TODO*/ };
+    void collapsedStateChanged() override { /*TODO*/ };
 
-	/** Respond to combo box changes*/
-	void comboBoxChanged(ComboBox*);
+    /** Respond to combo box changes*/
+    void comboBoxChanged (ComboBox*);
 
-	/** Respond to button presses */
-	void buttonClicked(Button* button) override;
+    /** Respond to button presses */
+    void buttonClicked (Button* button) override;
 
-	/** Save editor parameters (e.g. sync settings)*/
-	void saveVisualizerEditorParameters(XmlElement*) override { /*TODO*/ };
+    /** Save editor parameters (e.g. sync settings)*/
+    void saveVisualizerEditorParameters (XmlElement*) override { /*TODO*/ };
 
-	/** Load editor parameters (e.g. sync settings)*/
-	void loadVisualizerEditorParameters(XmlElement*) override { /*TODO*/ };
+    /** Load editor parameters (e.g. sync settings)*/
+    void loadVisualizerEditorParameters (XmlElement*) override { /*TODO*/ };
 
-	/** Called just prior to the start of acquisition, to allow custom commands. */
-	void startAcquisition() override { /*TODO*/ };
+    /** Called just prior to the start of acquisition, to allow custom commands. */
+    void startAcquisition() override { /*TODO*/ };
 
-	/** Called after the end of acquisition, to allow custom commands .*/
-	void stopAcquisition() override { /*TODO*/ };
+    /** Called after the end of acquisition, to allow custom commands .*/
+    void stopAcquisition() override { /*TODO*/ };
 
-	/** Creates the Neuropixels settings interface*/
-	Visualizer* createNewCanvas(void);
+    /** Creates the Neuropixels settings interface*/
+    Visualizer* createNewCanvas (void);
 
-	/** Initializes the probes in a background thread */
-	void initialize(bool signalChainIsLoading);
+    /** Initializes the probes in a background thread */
+    void initialize (bool signalChainIsLoading);
 
-	/** Update settings */
-	void update();
+    /** Update settings */
+    void update();
 
     void updateSettings();
-	void updateDevices();
+    void updateDevices();
 
-	void labelTextChanged(juce::Label *);
-	void timerCallback();
+    void labelTextChanged (juce::Label*);
+    void timerCallback();
 
-    void setCameraViewportSize(int width, int height);
+    void setCameraViewportSize (int width, int height);
 
 private:
-
     FrameGrabberCanvas* canvas;
 
-	ScopedPointer<ComboBox> videoSourceCombo;
-	ScopedPointer<Label> videoSourceLabel;
+    ScopedPointer<ComboBox> videoSourceCombo;
+    ScopedPointer<Label> videoSourceLabel;
     ScopedPointer<ComboBox> streamSourceCombo;
     ScopedPointer<Label> streamSourceLabel;
     ScopedPointer<ComboBox> qualityCombo;
@@ -102,17 +99,14 @@ private:
     ScopedPointer<Label> colorLabel;
     ScopedPointer<ComboBox> writeModeCombo;
     ScopedPointer<Label> writeModeLabel;
-	ScopedPointer<Label> fpsLabel;
-	ScopedPointer<UtilityButton> refreshButton;
-	ScopedPointer<UtilityButton> resetCounterButton;
-	ScopedPointer<Label> dirNameEdit;
+    ScopedPointer<Label> fpsLabel;
+    ScopedPointer<UtilityButton> refreshButton;
+    ScopedPointer<UtilityButton> resetCounterButton;
+    ScopedPointer<Label> dirNameEdit;
 
-	juce::int64 lastFrameCount;
+    juce::int64 lastFrameCount;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FrameGrabberEditor);
-
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FrameGrabberEditor);
 };
 
-
-#endif  // __FRAMEGRABBEREDITOR_H__
-
+#endif // __FRAMEGRABBEREDITOR_H__
