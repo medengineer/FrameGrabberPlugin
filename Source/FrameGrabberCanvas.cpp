@@ -68,6 +68,8 @@ void FrameGrabberCanvas::resized()
 {
     cameraViewport->setBounds (10, 10, getWidth() - 10, getHeight() - 10);
 
+    cameraView->setBounds (0, 0, cameraViewport->getWidth(), cameraViewport->getHeight());
+
     // why is this not working?
     cameraViewport->setScrollBarsShown (true, true, true, true);
     cameraViewport->setScrollBarThickness (10);
