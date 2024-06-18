@@ -74,6 +74,7 @@ void FrameGrabberEditor::updateSettings()
 
 void FrameGrabberEditor::comboBoxChanged (ComboBox* cb)
 {
+	/*
     FrameGrabber* thread = (FrameGrabber*) getProcessor();
 
     if (cb == qualityCombo)
@@ -105,10 +106,12 @@ void FrameGrabberEditor::comboBoxChanged (ComboBox* cb)
         int index = cb->getSelectedItemIndex();
         thread->setWriteMode (index);
     }
+	*/
 }
 
 void FrameGrabberEditor::buttonClicked (Button* button)
 {
+	/*
     FrameGrabber* thread = (FrameGrabber*) getProcessor();
 
     if (button == refreshButton)
@@ -121,10 +124,12 @@ void FrameGrabberEditor::buttonClicked (Button* button)
         bool state = btn->getToggleState();
         thread->setResetFrameCounter (state);
     }
+	*/
 }
 
 void FrameGrabberEditor::labelTextChanged (juce::Label* label)
 {
+	/*
     FrameGrabber* thread = (FrameGrabber*) getProcessor();
 
     if (label == dirNameEdit)
@@ -133,6 +138,7 @@ void FrameGrabberEditor::labelTextChanged (juce::Label* label)
 
         thread->setDirectoryName (name);
     }
+	*/
 }
 
 void FrameGrabberEditor::updateDevices()

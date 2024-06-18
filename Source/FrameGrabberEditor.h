@@ -89,21 +89,6 @@ public:
 private:
     FrameGrabberCanvas* canvas;
 
-    ScopedPointer<ComboBox> videoSourceCombo;
-    ScopedPointer<Label> videoSourceLabel;
-    ScopedPointer<ComboBox> streamSourceCombo;
-    ScopedPointer<Label> streamSourceLabel;
-    ScopedPointer<ComboBox> qualityCombo;
-    ScopedPointer<Label> qualityLabel;
-    ScopedPointer<ComboBox> colorCombo;
-    ScopedPointer<Label> colorLabel;
-    ScopedPointer<ComboBox> writeModeCombo;
-    ScopedPointer<Label> writeModeLabel;
-    ScopedPointer<Label> fpsLabel;
-    ScopedPointer<UtilityButton> refreshButton;
-    ScopedPointer<UtilityButton> resetCounterButton;
-    ScopedPointer<Label> dirNameEdit;
-
     juce::int64 lastFrameCount;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FrameGrabberEditor);
