@@ -26,12 +26,6 @@
 
 class FrameGrabberEditor;
 
-/*
-We have to put some class definitions that are using opencv here because
-there will be a data type conflict (int64) between opencv and JUCE if these
-classes are declared in the header file.
-*/
-
 class WriteThread : public Thread
 {
     OwnedArray<FrameWithTS> frameBuffer;
@@ -336,13 +330,13 @@ void FrameGrabber::imageReceived (const juce::Image& image)
     if (isRecording)
     {
         int64 swTs = CoreServices::getSystemTime();
-        int streamId = getDataStreams()[currentStreamIndex]->getStreamId();
-        int64 ts = getFirstSampleNumberForBlock (streamId);
-        int64 offset_in_ms = swTs - blockTimestamps[ts];
+        //int streamId = getDataStreams()[currentStreamIndex]->getStreamId();
+        //int64 ts = getFirstSampleNumberForBlock (streamId);
+        //int64 offset_in_ms = swTs - blockTimestamps[ts];
 
-        int64 synchronized_ts = ts + offset_in_ms * getDataStreams()[currentStreamIndex]->getSampleRate() / 1000.0f;
+        //int64 synchronized_ts = ts + offset_in_ms * getDataStreams()[currentStreamIndex]->getSampleRate() / 1000.0f;
 
-        writeThread->addFrame (synchronized_ts, swTs, getImageQuality());
+        writeThread->addFrame (1, swTs, getImageQuality());
     }
 
     frameCount++;
@@ -424,9 +418,11 @@ void FrameGrabber::stopRecording()
 
 void FrameGrabber::process (AudioSampleBuffer& buffer)
 {
+    /*
     int streamId = getDataStreams()[currentStreamIndex]->getStreamId();
     int64 ts = getFirstSampleNumberForBlock (streamId);
     blockTimestamps[ts] = CoreServices::getSystemTime();
+    */
 }
 
 /*
