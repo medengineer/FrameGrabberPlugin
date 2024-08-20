@@ -29,7 +29,7 @@
 
 #include "FrameGrabberEditor.h"
 
-#define SAVE_IMAGE_FRAMES false
+#define SAVE_IMAGE_FRAMES true
 
 //TODO: Support other source types
 enum SOURCE_TYPE
@@ -44,18 +44,43 @@ using T = juce::Image;
 class FrameWithTS
 {
 public:
-    FrameWithTS (
-        int64 ts_,
-        int64 swTs_,
-        int imQ_) : ts (ts_), swTs (swTs_), imQ (imQ_) {};
+    FrameWithTS(const juce::Image& f, juce::int64 src_ts, juce::int64 sw_ts, int imgQuality = 75)
+        : frame(f), // Copy the image (this might be replaced with a move operation if possible)
+          sourceTimestamp(src_ts),
+          softwareTimestamp(sw_ts),
+          imageQuality(imgQuality)
+    {
+    }
 
-    int64 getTS() const { return ts; }
-    int64 getSWTS() const { return swTs; }
-    int getImQ() const { return imQ; }
+    // No need for a custom destructor since juce::Image handles its own memory
+    ~FrameWithTS() = default;
+
+    // Provides read-only access to the frame
+    const juce::Image& getFrame() const
+    {
+        return frame;
+    }
+
+    juce::int64 getSourceTimestamp() const
+    {
+        return sourceTimestamp;
+    }
+
+    juce::int64 getSoftwareTimestamp() const
+    {
+        return softwareTimestamp;
+    }
+
+    int getImageQuality() const
+    {
+        return imageQuality;
+    }
 
 private:
-    int64 ts, swTs;
-    int imQ;
+    juce::Image frame; // Store by value since JUCE's Image class is reference-counted
+    juce::int64 sourceTimestamp;
+    juce::int64 softwareTimestamp;
+    int imageQuality;
 };
 
 class WriteThread;
@@ -78,6 +103,8 @@ public:
     FrameGrabber();
     ~FrameGrabber();
 
+    void registerParameters() override;
+
     AudioProcessorEditor* createEditor() override;
 
     String handleConfigMessage (const String& msg) override { return "TODO"; }
@@ -88,6 +115,8 @@ public:
 	void parameterValueChanged (Parameter* p) override;
 
     void process (AudioBuffer<float>& buffer);
+
+    void handleTTLEvent(TTLEventPtr event) override;
 
     void startRecording();
     void stopRecording();
@@ -108,8 +137,8 @@ public:
     int getCurrentDevice() { return currentDeviceIndex; }
     void setCurrentDevice (int index);
 
-    int getCurrentStreamIndex() { return currentStreamIndex; }
-    void setCurrentStreamIndex (int index);
+    int getCurrentStreamId() { return currentStreamId; }
+    void setCurrentStreamIdFromIndex (int index);
 
     void setImageQuality (int q);
     int getImageQuality();
@@ -161,7 +190,7 @@ private:
     bool resetFrameCounter;
     String dirName;
     int currentDeviceIndex;
-    int currentStreamIndex;
+    int currentStreamId;
     std::unique_ptr<WriteThread> writeThread;
 
     int experimentNumber;

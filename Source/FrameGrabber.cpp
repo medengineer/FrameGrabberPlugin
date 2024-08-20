@@ -111,14 +111,14 @@ public:
         lock.exit();
     }
 
-    bool addFrame (int64 srcTs, int64 swTs, int quality = 95)
+    bool addSyncFrame(const juce::Image& frame, juce::int64 srcTs, juce::int64 swTs, int quality = 95)
     {
         bool status;
 
         if (isThreadRunning())
         {
             lock.enter();
-            frameBuffer.add (new FrameWithTS (srcTs, swTs, quality));
+            frameBuffer.add(new FrameWithTS(frame, srcTs, swTs, quality));
             lock.exit();
             status = true;
         }
@@ -169,7 +169,7 @@ public:
 
         while (! threadShouldExit())
         {
-            if (isRecording && hasValidPath())
+            if (isRecording)
             {
                 if (frameBuffer.size() > 0)
                 {
@@ -190,17 +190,19 @@ public:
                         fileName = String::formatted ("frame at %.10lld.jpg", frameCount);
                         filePath = String (framePath.getFullPathName() + File::getSeparatorString() + fileName);
 
+                        LOGC("Writing frame to: ", filePath.toRawUTF8());
+
                         juce::File outputFile (filePath);
                         juce::FileOutputStream stream (outputFile);
                         JPEGImageFormat jpegFormat;
-                        jpegFormat.setQuality (frame_ts->getImQ());
-                        //jpegFormat.writeImageToStream(frame_ts->getFrame(), stream);
+                        //jpegFormat.setQuality (frame_ts->getImQ());
+                        jpegFormat.writeImageToStream(frame_ts->getFrame(), stream);
 
                         lock.exit();
                     }
 
                     lock.enter();
-                    line = String::formatted ("%lld,%d,%d,%lld,%lld\n", frameCount, experimentNumber, recordingNumber, frame_ts->getTS(), frame_ts->getSWTS());
+                    line = String::formatted ("%lld,%d,%d,%lld,%lld\n", frameCount, experimentNumber, recordingNumber, frame_ts->getSourceTimestamp(), frame_ts->getSoftwareTimestamp());
                     lock.exit();
                     timestampFile.appendText (line);
 
@@ -220,7 +222,7 @@ public:
 FrameGrabber::FrameGrabber()
     : GenericProcessor ("Frame Grabber"),
       currentDeviceIndex (-1),
-      currentStreamIndex (-1),
+      currentStreamId (-1),
       frameCount (0),
       isRecording (false),
       framePath (""),
@@ -237,15 +239,6 @@ FrameGrabber::FrameGrabber()
         for (auto& device : CameraDevice::getAvailableDevices())
             availableDevices.add (device.toStdString());
     }
-
-    addCategoricalParameter (Parameter::PROCESSOR_SCOPE, "video_source", "Video Source", "The device used to grab frames", availableDevices, 0, true);
-    addSelectedStreamParameter (Parameter::PROCESSOR_SCOPE, "stream_source", "Stream Source", "The stream to synchronize frames with", {}, 0);
-
-    Array<String> imageQualityOptions = { "High", "Medium", "Low" };
-    addCategoricalParameter (Parameter::PROCESSOR_SCOPE, "image_quality", "Image Quality", "The quality of the saved images", imageQualityOptions, 0, true);
-
-    String defaultRecordDirectory = CoreServices::getRecordingParentDirectory().getFullPathName();
-    addPathParameter (Parameter::PROCESSOR_SCOPE, "directory_name", "Write Directory", "The directory where video files will be saved", defaultRecordDirectory, {}, true);
 
     /* Create a Camera Device */
     DeviceInfo::Settings settings {
@@ -275,7 +268,19 @@ AudioProcessorEditor* FrameGrabber::createEditor()
     return editor.get();
 }
 
-void FrameGrabber::parameterValueChanged (Parameter* 	p)
+void FrameGrabber::registerParameters()
+{
+    addCategoricalParameter (Parameter::PROCESSOR_SCOPE, "video_source", "Video Source", "The device used to grab frames", availableDevices, 0, true);
+    addSelectedStreamParameter (Parameter::PROCESSOR_SCOPE, "stream_source", "Stream Source", "The stream to synchronize frames with", {}, 0);
+
+    Array<String> imageQualityOptions = { "High", "Medium", "Low" };
+    addCategoricalParameter (Parameter::PROCESSOR_SCOPE, "image_quality", "Image Quality", "The quality of the saved images", imageQualityOptions, 0, true);
+
+    String defaultRecordDirectory = CoreServices::getRecordingParentDirectory().getFullPathName();
+    addPathParameter (Parameter::PROCESSOR_SCOPE, "directory_name", "Write Directory", "The directory where video files will be saved", defaultRecordDirectory, {}, true);
+}
+
+void FrameGrabber::parameterValueChanged (Parameter* p)
 {
 	if (p->getName() == "video_source")
 	{
@@ -285,11 +290,11 @@ void FrameGrabber::parameterValueChanged (Parameter* 	p)
 		cameraDevice.reset(CameraDevice::openDevice(currentDeviceIndex));
 		getEditor()->updateSettings();
 	}
-	/*
-	else if (parameter->isParameter ("stream_source"))
+	else if (p->getName() == "stream_source")
 	{
-		setCurrentStreamIndex (parameter->getValue());
+        setCurrentStreamIdFromIndex((((SelectedStreamParameter*)p)->getSelectedIndex()));
 	}
+    /*
 	else if (parameter->isParameter ("image_quality"))
 	{
 		setImageQuality (parameter->getValue());
@@ -310,7 +315,7 @@ void FrameGrabber::parameterValueChanged (Parameter* 	p)
 	{
 		setDirectoryName (parameter->getValueAsString());
 	}
-	*/
+    */
 }
 
 void FrameGrabber::updateSettings()
@@ -319,7 +324,6 @@ void FrameGrabber::updateSettings()
 
 void FrameGrabber::imageReceived (const juce::Image& image)
 {
-    //LOGD("Width: ", image.getWidth(), " Height: ", image.getHeight());
     if (! headlessMode && ! firstImageReceived)
     {
         static_cast<FrameGrabberEditor*> (editor.get())->setCameraViewportSize (image.getWidth(), image.getHeight());
@@ -329,17 +333,39 @@ void FrameGrabber::imageReceived (const juce::Image& image)
     //Gets called ~15 fps w/ Logitech C920 @ 960x720
     if (isRecording)
     {
-        int64 swTs = CoreServices::getSystemTime();
+        //int64 swTs = CoreServices::getSystemTime();
         //int streamId = getDataStreams()[currentStreamIndex]->getStreamId();
         //int64 ts = getFirstSampleNumberForBlock (streamId);
         //int64 offset_in_ms = swTs - blockTimestamps[ts];
 
         //int64 synchronized_ts = ts + offset_in_ms * getDataStreams()[currentStreamIndex]->getSampleRate() / 1000.0f;
 
-        writeThread->addFrame (1, swTs, getImageQuality());
+        //writeThread->addFrame (1, swTs, getImageQuality());
     }
 
     frameCount++;
+}
+
+void FrameGrabber::handleTTLEvent (TTLEventPtr event)
+{
+    if (isRecording) {
+
+        const int eventId = event->getState() ? 1 : 0;
+        const int eventChannel = event->getLine();
+        const uint16 eventStreamId = event->getChannelInfo()->getStreamId();
+        const int eventSourceNodeId = event->getChannelInfo()->getSourceNodeId();
+        const int eventTime = int (event->getSampleNumber() - getFirstSampleNumberForBlock (eventStreamId));
+        const int eventSampleNumber = event->getSampleNumber();
+
+        if (eventStreamId == currentStreamId)
+        {
+            LOGC("FrameGrabber: TTL event from current stream: ", eventStreamId);
+            cameraDevice->takeStillPicture([this, eventSampleNumber](const juce::Image& image) { 
+                //imageReceived(image);
+                writeThread->addSyncFrame (image, eventSampleNumber, CoreServices::getSystemTime());
+            });
+        }
+    }
 }
 
 bool FrameGrabber::startAcquisition()
@@ -418,6 +444,7 @@ void FrameGrabber::stopRecording()
 
 void FrameGrabber::process (AudioSampleBuffer& buffer)
 {
+    checkForEvents();
     /*
     int streamId = getDataStreams()[currentStreamIndex]->getStreamId();
     int64 ts = getFirstSampleNumberForBlock (streamId);
@@ -488,12 +515,9 @@ void FrameGrabber::setCurrentDevice (int index)
 		LOGC( "Failed to open device at index: ", index)
 }
 
-void FrameGrabber::setCurrentStreamIndex (int index)
+void FrameGrabber::setCurrentStreamIdFromIndex (int index)
 {
-    lock.enter();
-    currentStreamIndex = index;
-    //Next acquisition will use the timestamps from the new stream
-    lock.exit();
+    currentStreamId = getDataStreams()[index]->getStreamId();
 }
 
 void FrameGrabber::setImageQuality (int q)
