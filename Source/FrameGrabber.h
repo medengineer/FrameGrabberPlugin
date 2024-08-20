@@ -183,7 +183,7 @@ private:
 
     bool threadRunning;
     bool isRecording;
-    File framePath;
+    File recordingDir;
     int imageQuality;
     int colorMode;
     int writeMode;

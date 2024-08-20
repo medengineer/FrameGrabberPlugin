@@ -30,7 +30,7 @@ class WriteThread : public Thread
 {
     OwnedArray<FrameWithTS> frameBuffer;
     juce::int64 frameCount;
-    File framePath;
+    File recordingDir;
     File timestampFile;
     bool isRecording;
     CriticalSection lock;
@@ -42,10 +42,10 @@ public:
     WriteThread()
         : Thread ("WriteThread"),
           frameCount (0),
-          framePath(),
+          recordingDir(),
           timestampFile(),
           isRecording (false),
-          experimentNumber (0),
+          experimentNumber (1),
           recordingNumber (0)
     {
         frameBuffer.clear();
@@ -58,16 +58,16 @@ public:
         clearBuffer();
     }
 
-    void setFramePath (File& f)
+    void setRecordPath (File& f)
     {
         lock.enter();
-        framePath = File (f);
+        recordingDir = File (f);
         lock.exit();
     }
 
     void createTimestampFile (String name = "frame_timestamps")
     {
-        String filePath = framePath.getFullPathName()
+        String filePath = recordingDir.getFullPathName()
                           + File::getSeparatorString()
                           + name
                           + ".csv";
@@ -146,7 +146,7 @@ public:
         bool status;
 
         lock.enter();
-        status = (framePath.exists() && timestampFile.exists());
+        status = (recordingDir.exists() && timestampFile.exists());
         lock.exit();
 
         return status;
@@ -188,7 +188,7 @@ public:
 
                         //fileName = String::formatted("frame_%.10lld_%d_%d.jpg", frameCounter, experimentNumber, recordingNumber);
                         fileName = String::formatted ("frame at %.10lld.jpg", frameCount);
-                        filePath = String (framePath.getFullPathName() + File::getSeparatorString() + fileName);
+                        filePath = String (recordingDir.getFullPathName() + File::getSeparatorString() + "frames" + File::getSeparatorString() + fileName);
 
                         LOGC("Writing frame to: ", filePath.toRawUTF8());
 
@@ -216,6 +216,12 @@ public:
         }
     }
 
+    void writeFirstRecordedFrameTime (int64 time)
+    {
+        String line = String::formatted ("First recorded frame time: %lld\n", time);
+        timestampFile.appendText (line);
+    }
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WriteThread)
 };
 
@@ -225,9 +231,8 @@ FrameGrabber::FrameGrabber()
       currentStreamId (-1),
       frameCount (0),
       isRecording (false),
-      framePath (""),
       imageQuality(),
-      experimentNumber (0),
+      experimentNumber (1),
       recordingNumber (0)
 {
     if (CameraDevice::getAvailableDevices().size())
@@ -390,26 +395,32 @@ void FrameGrabber::startRecording()
     {
         String recPath = getParameter ("directory_name")->getValueAsString();
 
-        framePath = File (
+        recordingDir = File (
             recPath + File::getSeparatorString() + CoreServices::getRecordingDirectoryBaseText() + File::getSeparatorString() + "Frame Grabber " + String (getNodeId()) + File::getSeparatorString() + "experiment" + String (experimentNumber) + File::getSeparatorString() + "recording" + String (recordingNumber) + File::getSeparatorString() + dirName);
 
-        LOGD ("Writing frames to: ", framePath.getFullPathName().toRawUTF8());
+        LOGD ("Writing frames to: ", recordingDir.getFullPathName().toRawUTF8());
 
-        if (! framePath.exists() && ! framePath.isDirectory())
+        if (! recordingDir.exists() && ! recordingDir.isDirectory())
         {
-            LOGD ("Creating directory at ", framePath.getFullPathName().toRawUTF8());
-            Result result = framePath.createDirectory();
+            LOGD ("Creating directory at ", recordingDir.getFullPathName().toRawUTF8());
+            Result result = recordingDir.createDirectory();
             if (result.failed())
             {
-                LOGC ("FrameGrabber: failed to create frame path ", framePath.getFullPathName().toRawUTF8());
-                framePath = File();
+                LOGC ("FrameGrabber: failed to create frame path ", recordingDir.getFullPathName().toRawUTF8());
+
+                recordingDir = File();
+            }
+            else
+            {
+                //Create frames directory
+                File (recordingDir.getFullPathName() + File::getSeparatorString() + "frames").createDirectory();
             }
         }
 
-        if (framePath.exists())
+        if (recordingDir.exists())
         {
             writeThread->setRecording (false);
-            writeThread->setFramePath (framePath);
+            writeThread->setRecordPath (recordingDir);
             writeThread->setExperimentNumber (experimentNumber);
             writeThread->setRecordingNumber (recordingNumber);
             writeThread->createTimestampFile();
@@ -420,7 +431,7 @@ void FrameGrabber::startRecording()
             writeThread->setRecording (true);
 
             LOGC ("Recording to format: ", cameraDevice->getFileExtension());
-            cameraDevice->startRecordingToFile (framePath.getChildFile ("video" + cameraDevice->getFileExtension()));
+            cameraDevice->startRecordingToFile (recordingDir.getChildFile ("video" + cameraDevice->getFileExtension()));
         }
     }
 
@@ -436,7 +447,8 @@ void FrameGrabber::stopRecording()
         writeThread->setRecording (false);
 
         int64 recordStartTime = cameraDevice->getTimeOfFirstRecordedFrame().toMilliseconds();
-        LOGD ("First recorded frame time: ", recordStartTime);
+        LOGC ("First recorded frame time: ", recordStartTime);
+        writeThread->writeFirstRecordedFrameTime (recordStartTime);
     }
     blockTimestamps.clear();
     writeThread->clearBuffer();
