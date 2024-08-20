@@ -375,7 +375,7 @@ void FrameGrabber::handleTTLEvent (TTLEventPtr event)
 
 bool FrameGrabber::startAcquisition()
 {
-    cameraDevice->addListener (this);
+    //cameraDevice->addListener (this);
     experimentNumber++;
     recordingNumber = 0;
     return true;
@@ -383,7 +383,7 @@ bool FrameGrabber::startAcquisition()
 
 bool FrameGrabber::stopAcquisition()
 {
-    cameraDevice->removeListener (this);
+    //cameraDevice->removeListener (this);
     return true;
 }
 
