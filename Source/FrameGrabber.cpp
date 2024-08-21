@@ -218,8 +218,26 @@ public:
 
     void writeFirstRecordedFrameTime (int64 time)
     {
-        String line = String::formatted ("First recorded frame time: %lld\n", time);
-        timestampFile.appendText (line);
+        String filePath = recordingDir.getFullPathName() + File::getSeparatorString() + "sync_messages.txt";
+        File syncFile = File (filePath);
+        Result res = syncFile.create();
+        if (res.failed())
+        {
+            LOGE ("Error creating sync text file: ", res.getErrorMessage());
+        }
+        else
+        {
+            std::unique_ptr<FileOutputStream> syncTextFile = syncFile.createOutputStream();
+            if (syncTextFile != nullptr)
+            {
+                syncTextFile->writeText ("First recorded frame time: " + String (time) + "\r\n", false, false, nullptr);
+                syncTextFile->flush();
+            }
+            else
+            {
+                LOGE("Error creating sync text file: " + res.getErrorMessage());
+            }
+        }
     }
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WriteThread)
