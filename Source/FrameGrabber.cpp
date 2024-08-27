@@ -547,7 +547,8 @@ void FrameGrabber::setCurrentDevice (int index)
 
 void FrameGrabber::setCurrentStreamIdFromIndex (int index)
 {
-    currentStreamId = getDataStreams()[index]->getStreamId();
+    if (index >= 0)
+        currentStreamId = getDataStreams()[index]->getStreamId();
 }
 
 void FrameGrabber::setImageQuality (int q)
