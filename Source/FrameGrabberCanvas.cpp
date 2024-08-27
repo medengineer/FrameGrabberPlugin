@@ -64,8 +64,11 @@ void FrameGrabberCanvas::updateSettings()
 {
 
     cameraViewport->setViewedComponent (nullptr, false);
-    cameraView = thread->cameraDevice->createViewerComponent();
-    cameraView->setBounds (0, 0, 640, 480);
+    if (cameraView == nullptr)
+    {
+        cameraView = thread->cameraDevice->createViewerComponent();
+        cameraView->setBounds (0, 0, 640, 480);
+    }
 
     cameraViewport->setViewedComponent (cameraView, false);
 }
