@@ -257,7 +257,7 @@ FrameGrabber::FrameGrabber()
     {
         hasCameraDevice = true;
         currentDeviceIndex = 0;
-        cameraDevice.reset (CameraDevice::openDevice (currentDeviceIndex));
+        cameraDevice = CameraDevice::openDevice (currentDeviceIndex);
 
         for (auto& device : CameraDevice::getAvailableDevices())
             availableDevices.add (device.toStdString());
@@ -282,6 +282,7 @@ FrameGrabber::FrameGrabber()
 FrameGrabber::~FrameGrabber()
 {
     cameraDevice->removeListener (this);
+    delete cameraDevice;
 }
 
 AudioProcessorEditor* FrameGrabber::createEditor()
@@ -308,10 +309,12 @@ void FrameGrabber::parameterValueChanged (Parameter* p)
 	if (p->getName() == "video_source")
 	{
 		currentDeviceIndex = p->getValue();
+        /*
 		cameraDevice.release();
 		Time::waitForMillisecondCounter(Time::getMillisecondCounter() + 1000);
 		cameraDevice.reset(CameraDevice::openDevice(currentDeviceIndex));
 		getEditor()->updateSettings();
+        */
 	}
 	else if (p->getName() == "stream_source")
 	{
@@ -535,10 +538,9 @@ void FrameGrabber::setCurrentDevice (int index)
 {
 	LOGC( "Got index: ", index);
     currentDeviceIndex = index;
-	CameraDevice* newDevice = CameraDevice::openDevice (currentDeviceIndex);
-	if (newDevice != nullptr)
+	cameraDevice = CameraDevice::openDevice (currentDeviceIndex);
+	if (cameraDevice != nullptr)
 	{
-    	cameraDevice.reset (newDevice);
 		getEditor()->updateSettings();
 	}
 	else

@@ -163,7 +163,7 @@ public:
     void saveCustomParametersToXml (XmlElement* parentElement);
     void loadCustomParametersFromXml();
 
-    std::unique_ptr<CameraDevice> cameraDevice;
+    CameraDevice* cameraDevice;
     bool hasCameraDevice { false };
 
     bool threadShouldExit { false };
