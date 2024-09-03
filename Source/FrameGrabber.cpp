@@ -26,223 +26,6 @@
 
 class FrameGrabberEditor;
 
-class WriteThread : public Thread
-{
-    OwnedArray<FrameWithTS> frameBuffer;
-    juce::int64 frameCount;
-    File recordingDir;
-    File timestampFile;
-    bool isRecording;
-    CriticalSection lock;
-
-    int experimentNumber;
-    int recordingNumber;
-
-public:
-    WriteThread()
-        : Thread ("WriteThread"),
-          frameCount (0),
-          recordingDir(),
-          timestampFile(),
-          isRecording (false),
-          experimentNumber (1),
-          recordingNumber (0)
-    {
-        frameBuffer.clear();
-        startThread();
-    }
-
-    ~WriteThread()
-    {
-        stopThread (1000);
-        clearBuffer();
-    }
-
-    void setRecordPath (File& f)
-    {
-        lock.enter();
-        recordingDir = File (f);
-        lock.exit();
-    }
-
-    void createTimestampFile (String name = "frame_timestamps")
-    {
-        String filePath = recordingDir.getFullPathName()
-                          + File::getSeparatorString()
-                          + name
-                          + ".csv";
-
-        timestampFile = File (filePath);
-        if (! timestampFile.exists())
-        {
-            timestampFile.create();
-            timestampFile.appendText ("# Frame index, Recording number, Experiment number, Source timestamp, Software timestamp\n");
-        }
-    }
-
-    int64 getFrameCount()
-    {
-        int count;
-        lock.enter();
-        count = frameCount;
-        lock.exit();
-
-        return count;
-    }
-
-    void resetFrameCounter()
-    {
-        lock.enter();
-        frameCount = 0;
-        lock.exit();
-    }
-
-    void setExperimentNumber (int n)
-    {
-        lock.enter();
-        experimentNumber = n;
-        lock.exit();
-    }
-
-    void setRecordingNumber (int n)
-    {
-        lock.enter();
-        recordingNumber = n;
-        lock.exit();
-    }
-
-    bool addSyncFrame(const juce::Image& frame, juce::int64 srcTs, juce::int64 swTs, int quality = 95)
-    {
-        bool status;
-
-        if (isThreadRunning())
-        {
-            lock.enter();
-            frameBuffer.add(new FrameWithTS(frame, srcTs, swTs, quality));
-            lock.exit();
-            status = true;
-        }
-        else
-        {
-            status = false;
-        }
-
-        return status;
-    }
-
-    void clearBuffer()
-    {
-        lock.enter();
-        /* for some reason frameBuffer.clear() didn't delete the content ... */
-        while (frameBuffer.size() > 0)
-        {
-            frameBuffer.removeAndReturn (0);
-        }
-        lock.exit();
-    }
-
-    bool hasValidPath()
-    {
-        bool status;
-
-        lock.enter();
-        status = (recordingDir.exists() && timestampFile.exists());
-        lock.exit();
-
-        return status;
-    }
-
-    void setRecording (bool status)
-    {
-        lock.enter();
-        isRecording = status;
-        lock.exit();
-    }
-
-    void run() override
-    {
-        FrameWithTS* frame_ts;
-        int imgQuality;
-        String fileName;
-        String filePath;
-        String line;
-
-        while (! threadShouldExit())
-        {
-            if (isRecording)
-            {
-                if (frameBuffer.size() > 0)
-                {
-                    frame_ts = frameBuffer.removeAndReturn (0);
-                }
-                else
-                {
-                    frame_ts = NULL;
-                }
-
-                if (frame_ts != NULL)
-                {
-                    if (SAVE_IMAGE_FRAMES)
-                    {
-                        lock.enter();
-
-                        //fileName = String::formatted("frame_%.10lld_%d_%d.jpg", frameCounter, experimentNumber, recordingNumber);
-                        fileName = String::formatted ("frame at %.10lld.jpg", frameCount);
-                        filePath = String (recordingDir.getFullPathName() + File::getSeparatorString() + "frames" + File::getSeparatorString() + fileName);
-
-                        LOGC("Writing frame to: ", filePath.toRawUTF8());
-
-                        juce::File outputFile (filePath);
-                        juce::FileOutputStream stream (outputFile);
-                        JPEGImageFormat jpegFormat;
-                        //jpegFormat.setQuality (frame_ts->getImQ());
-                        jpegFormat.writeImageToStream(frame_ts->getFrame(), stream);
-
-                        lock.exit();
-                    }
-
-                    lock.enter();
-                    line = String::formatted ("%lld,%d,%d,%lld,%lld\n", frameCount, experimentNumber, recordingNumber, frame_ts->getSourceTimestamp(), frame_ts->getSoftwareTimestamp());
-                    lock.exit();
-                    timestampFile.appendText (line);
-
-                    frameCount++;
-                }
-            }
-            else
-            {
-                sleep (50);
-            }
-        }
-    }
-
-    void writeFirstRecordedFrameTime (int64 time)
-    {
-        String filePath = recordingDir.getFullPathName() + File::getSeparatorString() + "sync_messages.txt";
-        File syncFile = File (filePath);
-        Result res = syncFile.create();
-        if (res.failed())
-        {
-            LOGE ("Error creating sync text file: ", res.getErrorMessage());
-        }
-        else
-        {
-            std::unique_ptr<FileOutputStream> syncTextFile = syncFile.createOutputStream();
-            if (syncTextFile != nullptr)
-            {
-                syncTextFile->writeText ("First recorded frame time: " + String (time) + "\r\n", false, false, nullptr);
-                syncTextFile->flush();
-            }
-            else
-            {
-                LOGE("Error creating sync text file: " + res.getErrorMessage());
-            }
-        }
-    }
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WriteThread)
-};
-
 FrameGrabber::FrameGrabber()
     : GenericProcessor ("Frame Grabber"),
       currentDeviceIndex (-1),
@@ -288,7 +71,6 @@ FrameGrabber::~FrameGrabber()
 AudioProcessorEditor* FrameGrabber::createEditor()
 {
     editor = std::make_unique<FrameGrabberEditor> (this);
-
     return editor.get();
 }
 
@@ -297,7 +79,11 @@ void FrameGrabber::registerParameters()
     addCategoricalParameter (Parameter::PROCESSOR_SCOPE, "video_source", "Video Source", "The device used to grab frames", availableDevices, 0, true);
     addSelectedStreamParameter (Parameter::PROCESSOR_SCOPE, "stream_source", "Stream Source", "The stream to synchronize frames with", {}, 0);
 
+#ifdef _WIN32
     Array<String> imageQualityOptions = { "High", "Medium", "Low" };
+#else
+    Array<String> imageQualityOptions = { "High" };
+#endif
     addCategoricalParameter (Parameter::PROCESSOR_SCOPE, "image_quality", "Image Quality", "The quality of the saved images", imageQualityOptions, 0, true);
 
     String defaultRecordDirectory = CoreServices::getRecordingParentDirectory().getFullPathName();
@@ -348,32 +134,15 @@ void FrameGrabber::updateSettings()
 {
 }
 
-void FrameGrabber::imageReceived (const juce::Image& image)
+void FrameGrabber::imageReceived(const juce::Image& image)
 {
-    if (! headlessMode && ! firstImageReceived)
-    {
-        static_cast<FrameGrabberEditor*> (editor.get())->setCameraViewportSize (image.getWidth(), image.getHeight());
-        firstImageReceived = true;
-    }
-
-    //Gets called ~15 fps w/ Logitech C920 @ 960x720
-    if (isRecording)
-    {
-        //int64 swTs = CoreServices::getSystemTime();
-        //int streamId = getDataStreams()[currentStreamIndex]->getStreamId();
-        //int64 ts = getFirstSampleNumberForBlock (streamId);
-        //int64 offset_in_ms = swTs - blockTimestamps[ts];
-
-        //int64 synchronized_ts = ts + offset_in_ms * getDataStreams()[currentStreamIndex]->getSampleRate() / 1000.0f;
-
-        //writeThread->addFrame (1, swTs, getImageQuality());
-    }
-
-    frameCount++;
+    int64 receivedTime = CoreServices::getSystemTime();
+    writeThread->addSyncFrame (receivedTime);
 }
 
 void FrameGrabber::handleTTLEvent (TTLEventPtr event)
 {
+    /*
     if (isRecording) {
 
         const int eventId = event->getState() ? 1 : 0;
@@ -392,11 +161,12 @@ void FrameGrabber::handleTTLEvent (TTLEventPtr event)
             });
         }
     }
+    */
 }
 
 bool FrameGrabber::startAcquisition()
 {
-    //cameraDevice->addListener (this);
+    cameraDevice->addListener (this);
     experimentNumber++;
     recordingNumber = 0;
     return true;
@@ -404,7 +174,7 @@ bool FrameGrabber::startAcquisition()
 
 bool FrameGrabber::stopAcquisition()
 {
-    //cameraDevice->removeListener (this);
+    cameraDevice->removeListener (this);
     return true;
 }
 
@@ -445,10 +215,6 @@ void FrameGrabber::startRecording()
             writeThread->setExperimentNumber (experimentNumber);
             writeThread->setRecordingNumber (recordingNumber);
             writeThread->createTimestampFile();
-            if (resetFrameCounter)
-            {
-                writeThread->resetFrameCounter();
-            }
             writeThread->setRecording (true);
 
             LOGC ("Recording to format: ", cameraDevice->getFileExtension());
@@ -471,18 +237,13 @@ void FrameGrabber::stopRecording()
         LOGC ("First recorded frame time: ", recordStartTime);
         writeThread->writeFirstRecordedFrameTime (recordStartTime);
     }
-    blockTimestamps.clear();
-    writeThread->clearBuffer();
 }
 
 void FrameGrabber::process (AudioSampleBuffer& buffer)
 {
-    checkForEvents();
-    /*
-    int streamId = getDataStreams()[currentStreamIndex]->getStreamId();
-    int64 ts = getFirstSampleNumberForBlock (streamId);
-    blockTimestamps[ts] = CoreServices::getSystemTime();
-    */
+    int64 firstSampleNumberInBlock = getFirstSampleNumberForBlock (currentStreamId);
+    int64 softwareTime = CoreServices::getSystemTime();
+    writeThread->addBlockTimestamp (firstSampleNumberInBlock, softwareTime);
 }
 
 /*

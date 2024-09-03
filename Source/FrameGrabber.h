@@ -27,75 +27,9 @@
 
 #include <ProcessorHeaders.h>
 
+#include "WriteThread.h"
+
 #include "FrameGrabberEditor.h"
-
-#define SAVE_IMAGE_FRAMES true
-
-//TODO: Support other source types
-enum SOURCE_TYPE
-{
-    WEBCAM = 0,
-    OTHER,
-};
-
-//TODO: Support other image types
-using T = juce::Image;
-
-class FrameWithTS
-{
-public:
-    FrameWithTS(const juce::Image& f, juce::int64 src_ts, juce::int64 sw_ts, int imgQuality = 75)
-        : frame(f), // Copy the image (this might be replaced with a move operation if possible)
-          sourceTimestamp(src_ts),
-          softwareTimestamp(sw_ts),
-          imageQuality(imgQuality)
-    {
-    }
-
-    // No need for a custom destructor since juce::Image handles its own memory
-    ~FrameWithTS() = default;
-
-    // Provides read-only access to the frame
-    const juce::Image& getFrame() const
-    {
-        return frame;
-    }
-
-    juce::int64 getSourceTimestamp() const
-    {
-        return sourceTimestamp;
-    }
-
-    juce::int64 getSoftwareTimestamp() const
-    {
-        return softwareTimestamp;
-    }
-
-    int getImageQuality() const
-    {
-        return imageQuality;
-    }
-
-private:
-    juce::Image frame; // Store by value since JUCE's Image class is reference-counted
-    juce::int64 sourceTimestamp;
-    juce::int64 softwareTimestamp;
-    int imageQuality;
-};
-
-class WriteThread;
-
-enum ImageWriteMode
-{
-    NEVER = 0,
-    RECORDING = 1,
-    ACQUISITION = 2
-};
-enum ColorMode
-{
-    GRAY = 0,
-    RGB = 1
-};
 
 class FrameGrabber : public GenericProcessor, public CameraDevice::Listener
 {
@@ -169,11 +103,8 @@ public:
     bool threadShouldExit { false };
 
 private:
-    bool firstImageReceived { false };
 
     void imageReceived (const juce::Image& image) override;
-
-    std::map<int64, int64> blockTimestamps;
 
     //void run() override;
 
